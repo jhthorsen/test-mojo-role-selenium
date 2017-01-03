@@ -16,14 +16,17 @@ my $SCRIPT_NAME = File::Basename::basename($0);
 my $SCREENSHOT  = 1;
 
 has driver => sub {
-  my $self = shift;
-  warn "[Selenium] Using @{[$self->_driver_class]}\n" if DEBUG;
-  my $driver = $self->_driver_class->new(ua => $self->ua);
+  my $self         = shift;
+  my $args         = $self->driver_args;
+  my $driver_class = $args->{driver_class} || 'Selenium::Chrome';
+  warn "[Selenium] Using $driver_class\n" if DEBUG;
+  my $driver = $driver_class->new(%$args, ua => $self->ua);
   $driver->debug_on if DEBUG;
   $driver->default_finder('css');
   return $driver;
 };
 
+has driver_args          => sub { +{} };
 has screenshot_directory => sub { File::Spec->tmpdir };
 
 has _base => sub {
@@ -32,7 +35,6 @@ has _base => sub {
   return Mojo::URL->new("http://127.0.0.1:$port");
 };
 
-has _driver_class => 'Selenium::Chrome';
 has _live_url => sub { Mojo::URL->new };
 
 has _server => sub {
@@ -305,9 +307,16 @@ a browser.
   $driver = $self->driver;
   $self = $self->driver(Selenium::Chrome->new);
 
-An instance of L<Selenium::Chrome>.
+An instance of L<Selenium::Remote::Driver>.
 
-TODO: Add support for other browsers.
+=head2 driver_args
+
+  $hash = $self->driver_args;
+  $self = $self->driver_args({driver_class => "Selenium::Chrome"});
+
+Used to set args passed on to the L</driver> on construction time. In addition,
+a special key "driver_class" can be set to use another driver class, than the
+default L<Selenium::Chrome>.
 
 =head2 screenshot_directory
 
