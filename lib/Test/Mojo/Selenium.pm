@@ -1,7 +1,9 @@
 package Test::Mojo::Selenium;
 use Mojo::Base 'Test::Mojo';
 
-use Mojo::Util qw(encode);
+use File::Basename ();
+use File::Spec;
+use Mojo::Util qw(encode steady_time);
 use Selenium::Chrome;
 use Selenium::Remote::WDKeys;
 
@@ -22,6 +24,8 @@ has driver => sub {
   return $driver;
 };
 
+has screenshot_directory => sub { File::Spec->tmpdir };
+
 has _driver_class => 'Selenium::Chrome';
 
 has _server => sub {
@@ -38,14 +42,13 @@ has _server => sub {
 
 # Install proxy methods
 # Note: These methods are experimental and might change to testing methods instead
-sub button_down        { _proxy(button_down        => @_) }
-sub button_up          { _proxy(button_up          => @_) }
-sub capture_screenshot { _proxy(capture_screenshot => @_) }
-sub go_back            { _proxy(go_back            => @_) }
-sub go_forward         { _proxy(go_forward         => @_) }
-sub maximize_window    { _proxy(maximize_window    => @_) }
-sub refresh            { _proxy(refresh            => @_) }
-sub set_orientation    { _proxy(set_orientation    => @_) }
+sub button_down     { _proxy(button_down     => @_) }
+sub button_up       { _proxy(button_up       => @_) }
+sub go_back         { _proxy(go_back         => @_) }
+sub go_forward      { _proxy(go_forward      => @_) }
+sub maximize_window { _proxy(maximize_window => @_) }
+sub refresh         { _proxy(refresh         => @_) }
+sub set_orientation { _proxy(set_orientation => @_) }
 
 sub active_element_is {
   my ($self, $selector, $desc) = @_;
@@ -66,6 +69,13 @@ sub cache_status_is {
   my ($self, $status, $desc) = @_;
   return $self->_test('is', $self->driver->cache_status,
     uc $status, _desc($desc, "cache status is $status"));
+}
+
+sub capture_screenshot {
+  my ($self, $name) = @_;
+  $name ||= join '-', File::Basename::basename($0), steady_time;
+  $self->driver->capture_screenshot(File::Spec->catfile($self->screenshot_directory, "$name.png"));
+  return $self;
 }
 
 sub click_ok { _element_action(click => @_); }
@@ -274,6 +284,13 @@ a browser.
   $driver = $self->driver;
   $self = $self->driver(Selenium::Chrome->new);
 
+=head2 screenshot_directory
+
+  $path = $self->screenshot_directory;
+  $self = $self->screenshot_directory(File::Spec->tmpdir);
+
+Where screenshots are saved.
+
 =head1 METHODS
 
 =head2 active_element_is
@@ -304,10 +321,11 @@ See L<Selenium::Remote::Driver/button_up>.
 
 =head2 capture_screenshot
 
+  $self = $self->capture_screenshot($name);
   $self = $self->capture_screenshot;
 
-TODO: Capture screenthot to L</screenthot_directory> with the current URL and
-timestamp as filename.
+Capture screenthot to L</screenshot_directory> with the current timestamp or
+C<$name> as filename.
 
 =head2 click_ok
 
