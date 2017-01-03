@@ -9,8 +9,8 @@ WriteMakefile(
   EXE_FILES     => [qw(  )],
   META_MERGE    => {
     resources => {
-      bugtracker => 'https://github.com/jhthorsen/test-mojo-selenium/issues',
-      homepage   => 'https://github.com/jhthorsen/test-mojo-selenium',
+      bugtracker => 'https://github.com/jhthorsen/test-mojo-role-selenium/issues',
+      homepage   => 'https://github.com/jhthorsen/test-mojo-role-selenium',
       repository => 'https://github.com/jhthorsen/test-mojo-role-selenium.git',
     },
   },

@@ -1,4 +1,5 @@
-Revision history for perl distribution Test-Mojo-Selenium
+Revision history for perl distribution Test-Mojo-Role-Selenium
 
 0.01 Not Released
  - Started project
+ - Marked role as EXPERIMENTAL
