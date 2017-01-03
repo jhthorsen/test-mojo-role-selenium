@@ -1,0 +1,234 @@
+NAME
+    Test::Mojo::Role::Selenium - Test::Mojo in a real browser
+
+SYNOPSIS
+      use Mojo::Base -strict;
+      use Test::Mojo::WithRoles "Selenium";
+      use Test::More;
+
+      my $t = Test::Mojo::WithRoles->new("MyApp");
+
+      # All the standard Test::Mojo methods are available
+      ok $t->isa("Test::Mojo");
+      ok $t->does("Test::Mojo::Role::Selenium");
+
+      # Make sure the selenium driver can be initialized
+      plan skip_all => $@ unless eval { $t->driver };
+
+      $t->navigate_ok("/")
+        ->status_is(200)
+        ->header_is("Server" => "Mojolicious (Perl)")
+        ->text_is("div#message" => "Hello!")
+        ->live_text_is("div#message" => "Hello!")
+        ->live_element_exists("nav")
+        ->element_is_displayed("nav")
+        ->active_element_is("input[name=q]")
+        ->send_keys_ok("input[name=q]", "Mojo")
+        ->capture_screenshot;
+
+      $t->submit_ok
+        ->status_is(200)
+        ->current_url_like(qr{q=Mojo})
+        ->value_is("input[name=q]", "Mojo");
+
+      $t->click_ok("nav a.logo")->status_is(200);
+
+      done_testing;
+
+DESCRIPTION
+    Test::Mojo::Role::Selenium is a role that extends Test::Mojo with
+    additional methods which checks behaviour in a browser. All the heavy
+    lifting is done by Selenium::Remote::Driver.
+
+    Some of the Selenium::Remote::Driver methods are available directly in
+    this role, while the rest are available through the object held by the
+    "driver" attribute. Please let me know if you think more tests or
+    methods should be provided directly by Test::Mojo::Role::Selenium.
+
+    This role is EXPERIMENTAL and subject to change.
+
+CAVEAT
+    "tx" in Test::Mojo is only populated by this role, if the initial
+    request is done by passing a relative path to "navigate_ok". This means
+    that methods such as "header_is" in Test::Mojo will not work as expected
+    (probably fail completely) if "navigate_ok" is issued with an absolute
+    path like <http://mojolicious.org>.
+
+ATTRIBUTES
+  driver
+      $driver = $self->driver;
+
+    An instance of Selenium::Remote::Driver.
+
+  driver_args
+      $hash = $self->driver_args;
+      $self = $self->driver_args({driver_class => "Selenium::PhantomJS"});
+
+    Used to set args passed on to the "driver" on construction time. In
+    addition, a special key "driver_class" can be set to use another driver
+    class, than the default Selenium::PhantomJS.
+
+    Note that the environment variavble "MOJO_SELENIUM_DRIVER" can also be
+    used to override the driver class.
+
+  screenshot_directory
+      $path = $self->screenshot_directory;
+      $self = $self->screenshot_directory(File::Spec->tmpdir);
+
+    Where screenshots are saved.
+
+METHODS
+  active_element_is
+      $self = $self->active_element_is("input[name=username]");
+
+    Test that the current active element on the page match the selector.
+
+  button_down
+      $self = $self->button_down;
+
+    See "button_down" in Selenium::Remote::Driver.
+
+  button_up
+      $self = $self->button_up;
+
+    See "button_up" in Selenium::Remote::Driver.
+
+  capture_screenshot
+      $self = $self->capture_screenshot;
+      $self = $self->capture_screenshot("%t-page-x");
+      $self = $self->capture_screenshot("%0-%t-%n");
+
+    Capture screenshot to "screenshot_directory" with filename specified by
+    the input format. The format supports these special strings:
+
+      Format | Description
+      -------|----------------------
+      %t     | Start time for script
+      %0     | Name of script
+      %n     | Auto increment
+
+  click_ok
+      $self = $self->click_ok("a", "left");
+
+    Click on an element.
+
+  current_url_is
+      $self = $self->current_url_is("http://mojolicious.org/");
+      $self = $self->current_url_is("/whatever");
+
+    Test the current browser URL.
+
+  current_url_like
+      $self = $self->current_url_like(qr{/whatever});
+
+    Test the current browser URL.
+
+  element_is_displayed
+      $self = $self->element_is_displayed("nav");
+
+    Test if an element is displayed on the web page.
+
+    See "is_displayed" in Selenium::Remote::WebElement.
+
+  element_is_hidden
+      $self = $self->element_is_hidden("nav");
+
+    Test if an element is hidden on the web page.
+
+    See "is_hidden" in Selenium::Remote::WebElement.
+
+  go_back
+      $self = $self->go_back;
+
+    See "go_back" in Selenium::Remote::Driver.
+
+  go_forward
+      $self = $self->go_forward;
+
+    See "go_forward" in Selenium::Remote::Driver.
+
+  live_element_count_is
+    See "element_count_is" in Test::Mojo.
+
+  live_element_exists
+    See "element_exists" in Test::Mojo.
+
+  live_element_exists_not
+    See "element_exists_not" in Test::Mojo.
+
+  live_text_is
+      $self = $self->live_text_is("div.name", "Mojo");
+
+    Checks text content of the CSS selectors first matching HTML element in
+    the browser matches the given string.
+
+  live_text_like
+      $self = $self->live_text_is("div.name", qr{Mojo});
+
+    Checks text content of the CSS selectors first matching HTML element in
+    the browser matches the given regex.
+
+  navigate_ok
+      $self = $self->navigate_ok("/");
+      $self = $self->navigate_ok("http://mojolicious.org/");
+
+    Open a browser window and go to the given location.
+
+  maximize_window
+      $self = $self->maximize_window;
+
+    See "maximize_window" in Selenium::Remote::Driver.
+
+  refresh
+      $self = $self->refresh;
+
+    See "refresh" in Selenium::Remote::Driver.
+
+  send_keys_ok
+      $self->send_keys_ok("input[name=username]", "jhthorsen");
+      $self->send_keys_ok("input[name=name]", ["jan", \"space", "henning"]);
+
+    Used to sen keys to a given element. Scalar refs will be sent as
+    Selenium::Remote::WDKeys strings.
+
+  set_selected_element_ok
+      $self = $self->set_selected_element_ok("input[name=email]");
+
+    Select and option, checkbox or radiobutton.
+
+    See "set_selected" in Selenium::Remote::WebElement
+
+  set_window_size
+      $self = $self->set_window_size([$width, $height]);
+      $self = $self->set_window_size([375, 667]);
+
+    Set the browser window size.
+
+  submit_ok
+      $self = $self->submit_ok("form");
+      $self = $self->submit_ok;
+
+    Submit a form, either by selector or the current active form.
+
+    See "submit" in Selenium::Remote::WebElement.
+
+  window_size_is
+      $self = $self->window_size_is([$width, $height]);
+      $self = $self->window_size_is([375, 667]);
+
+    Test if window has the expected width and height.
+
+AUTHOR
+    Jan Henning Thorsen
+
+COPYRIGHT AND LICENSE
+    Copyright (C) 2014, Jan Henning Thorsen
+
+    This program is free software, you can redistribute it and/or modify it
+    under the terms of the Artistic License version 2.0.
+
+SEE ALSO
+    Test::Mojo.
+
+    Selenium::Remote::Driver
+
