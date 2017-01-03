@@ -264,7 +264,7 @@ sub request {
 
 =head1 NAME
 
-Test::Mojo::Selenium - Test::Mojo in a real browser
+Test::Mojo::Role::Selenium - Test::Mojo in a real browser
 
 =head1 SYNOPSIS
 
@@ -296,7 +296,7 @@ Test::Mojo::Selenium - Test::Mojo in a real browser
 
 =head1 DESCRIPTION
 
-L<Test::Mojo::Selenium> is module that provides a similar interface for testing
+L<Test::Mojo::Role::Selenium> is module that provides a similar interface for testing
 as L<Test::Mojo>, but uses L<Selenium::Remote::Driver> to run the tests inside
 a browser.
 
