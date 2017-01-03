@@ -15,12 +15,6 @@ our $VERSION = '0.01';
 my $SCRIPT_NAME = File::Basename::basename($0);
 my $SCREENSHOT  = 1;
 
-has base => sub {
-  my $self = shift;
-  my $port = Mojo::IOLoop::Server->generate_port;
-  return Mojo::URL->new("http://127.0.0.1:$port");
-};
-
 has driver => sub {
   my $self = shift;
   warn "[Selenium] Using @{[$self->_driver_class]}\n" if DEBUG;
@@ -32,8 +26,13 @@ has driver => sub {
 
 has screenshot_directory => sub { File::Spec->tmpdir };
 
-has _driver_class => 'Selenium::Chrome';
+has _base => sub {
+  my $self = shift;
+  my $port = Mojo::IOLoop::Server->generate_port;
+  return Mojo::URL->new("http://127.0.0.1:$port");
+};
 
+has _driver_class => 'Selenium::Chrome';
 has _live_url => sub { Mojo::URL->new };
 
 has _server => sub {
@@ -49,7 +48,7 @@ has _server => sub {
     }
   );
 
-  $server->app($app)->listen([$self->base->to_string])
+  $server->app($app)->listen([$self->_base->to_string])
     ->start->ioloop->acceptor($server->acceptors->[0]);
 
   return $server;
@@ -148,7 +147,7 @@ sub live_get_ok {
   my $err;
 
   unless ($url->is_abs) {
-    my $base = $self->base;
+    my $base = $self->_base;
     $url->scheme($base->scheme)->host($base->host)->port($base->port);
   }
 
@@ -300,13 +299,6 @@ as L<Test::Mojo>, but uses L<Selenium::Remote::Driver> to run the tests inside
 a browser.
 
 =head1 ATTRIBUTES
-
-=head2 base
-
-  $url = $self->base;
-  $self = $self->base(Mojo::URL->new("http://127.0.0.1:3000"));
-
-Base URL to L<Mojo::Server::Daemon> instance that the selenium driver connect to.
 
 =head2 driver
 
