@@ -60,43 +60,34 @@ sub active_element_is {
   my ($self, $selector, $desc) = @_;
   my $driver = $self->driver;
   my $active = $driver->get_active_element;
-  my $el     = $self->_live_find_element($selector);
+  my $el     = $self->_proxy(find_element => $selector);
   my $same   = $active && $el ? $driver->compare_elements($active, $el) : 0;
 
   return $self->_test('ok', $same, _desc($desc, "active element is $selector"));
 }
 
-sub body_like {
-  my ($self, $match, $desc) = @_;
-  return $self->_test('like', $self->driver->get_body, $match, _desc($desc, 'body is similar'));
-}
-
-sub cache_status_is {
-  my ($self, $status, $desc) = @_;
-  return $self->_test('is', $self->driver->cache_status,
-    uc $status, _desc($desc, "cache status is $status"));
-}
-
 sub capture_screenshot {
   my ($self, $path) = @_;
-  $path ||= _screenshot_name($path ? "$path.png" : "%0-%t-%n.png");
+  $path = _screenshot_name($path ? "$path.png" : "%0-%t-%n.png");
   $path = File::Spec->catfile($self->screenshot_directory, $path);
-  warn "[Selenium] Creating screenshot $path\n" if DEBUG;
+  Test::More::diag("Saving screenshot to $path");
   $self->driver->capture_screenshot($path);
   return $self;
 }
 
 sub click_ok {
   my ($self, $selector, $desc) = @_;
-  my $el = $selector ? $self->_live_find_element($selector) : $self->driver->get_active_element;
+  my $el = $selector ? $self->_proxy(find_element => $selector) : $self->driver->get_active_element;
   $el->click if $el;
   return $self->_test('ok', $el, _desc($desc, "click on $selector"));
 }
 
 sub current_url_is {
-  my ($self, $match, $desc) = @_;
+  my $self = shift;
+  my $url  = $self->_live_abs_url(shift);
+
   return $self->_test('is', $self->driver->get_current_url,
-    $match, _desc($desc, 'exact match for current url'));
+    $url->to_string, _desc('exact match for current url'));
 }
 
 sub current_url_like {
@@ -107,26 +98,20 @@ sub current_url_like {
 
 sub element_is_displayed {
   my ($self, $selector, $desc) = @_;
-  my $el = $self->_live_find_element($selector);
+  my $el = $self->_proxy(find_element => $selector);
   return $self->_test('ok', ($el && $el->is_displayed),
     _desc($desc, "element $selector is displayed"));
 }
 
-sub element_is_enabled {
-  my ($self, $selector, $desc) = @_;
-  my $el = $self->_live_find_element($selector);
-  return $self->_test('ok', ($el && $el->is_enabled), _desc($desc, "element $selector is enabled"));
-}
-
 sub element_is_hidden {
   my ($self, $selector, $desc) = @_;
-  my $el = $self->_live_find_element($selector);
+  my $el = $self->_proxy(find_element => $selector);
   return $self->_test('ok', ($el && $el->is_hidden), _desc($desc, "element $selector is hidden"));
 }
 
 sub live_element_count_is {
   my ($self, $selector, $count, $desc) = @_;
-  my $els = $self->_live_find_elements($selector);
+  my $els = $self->_proxy(find_elements => $selector);
   return $self->_test('is', int(@$els), $count,
     _desc($desc, qq{element count for selector "$selector"}));
 }
@@ -134,39 +119,13 @@ sub live_element_count_is {
 sub live_element_exists {
   my ($self, $selector, $desc) = @_;
   $desc = _desc($desc, qq{element for selector "$selector" exists});
-  return $self->_test('ok', $self->_live_find_element($selector), $desc);
+  return $self->_test('ok', $self->_proxy(find_element => $selector), $desc);
 }
 
 sub live_element_exists_not {
   my ($self, $selector, $desc) = @_;
   $desc = _desc($desc, qq{no element for selector "$selector"});
-  return $self->_test('ok', !$self->_live_find_element($selector), $desc);
-}
-
-sub live_get_ok {
-  my $self = shift;
-  my $url  = Mojo::URL->new(shift);
-  my $err;
-
-  unless ($url->is_abs) {
-    my $base = $self->_base;
-    $url->scheme($base->scheme)->host($base->host)->port($base->port);
-  }
-
-  $self->_server;    # Make sure server is running
-  $self->tx(undef);
-  $self->_live_url($url);
-  $self->driver->get($url->to_string);
-
-  if ($self->tx) {
-    $err = $self->tx->error;
-    Test::More::diag($err->{message}) if $err and $err->{message};
-  }
-  else {
-    Test::More::diag('External request? $t->tx() was not set');
-  }
-
-  return $self->_test('ok', !$err, _desc("live get $url"));
+  return $self->_test('ok', !$self->_proxy(find_element => $selector), $desc);
 }
 
 sub live_text_is {
@@ -181,6 +140,26 @@ sub live_text_like {
     $regex, _desc($desc, qq{similar match for selector "$selector"}));
 }
 
+sub navigate_ok {
+  my ($self, $url) = @_;
+  my $err;
+
+  $self->_live_url($self->_live_abs_url($url));
+  $self->tx(undef);
+  $self->_server;    # Make sure server is running
+  $self->driver->get($self->_live_url->to_string);
+
+  if ($self->tx) {
+    $err = $self->tx->error;
+    Test::More::diag($err->{message}) if $err and $err->{message};
+  }
+  else {
+    Test::More::diag('External request? $t->tx() was not set');
+  }
+
+  return $self->_test('ok', !$err, _desc("live get $url"));
+}
+
 around new => sub {
   my $next = shift;
   my $self = $next->(@_);
@@ -188,28 +167,22 @@ around new => sub {
   return $self;
 };
 
-sub orientation_is {
-  my ($self, $exp, $desc) = @_;
-  $self->_test('is', lc($self->driver->get_orientation), $exp, _desc($desc, "orientation is $exp"));
-}
-
 sub send_keys_ok {
   my ($self, $selector, $keys, $desc) = @_;
-  my $el = $self->_live_find_element($selector);
+  my $el = $self->_proxy(find_element => $selector);
   map { $el->send_keys(ref $_ ? KEYS->{$_} : $_) } ref $keys ? @$keys : ($keys) if $el;
   return $self->_test('ok', $el, _desc($desc, "keys sent to $selector"));
 }
 
-sub set_window_size_ok {
+sub set_window_size {
   my ($self, $size, $desc) = @_;
-  $self->driver->set_window_size(@$size);
-  local $Test::Builder::Level = $Test::Builder::Level + 1;
-  return $self->window_size_is($size, $desc);
+  $self->driver->set_window_size(reverse @$size);
+  return $self;
 }
 
 sub submit_ok {
   my ($self, $selector, $desc) = @_;
-  my $el = $self->_live_find_element($selector);
+  my $el = $self->_proxy(find_element => $selector);
   $el->submit if $el;
   return $self->_test('ok', $el, _desc($desc, "click on $selector"));
 }
@@ -223,16 +196,28 @@ sub window_size_is {
 
 sub _desc { encode 'UTF-8', shift || shift }
 
-sub _live_find_element {
-  my ($self, $selector) = @_;
-  my $el = eval { $self->driver->find_element($selector) };
+sub _live_abs_url {
+  my $self = shift;
+  my $url  = Mojo::URL->new(shift);
+
+  unless ($url->is_abs) {
+    my $base = $self->_base;
+    $url->scheme($base->scheme)->host($base->host)->port($base->port);
+  }
+
+  return $url;
+}
+
+sub _proxy {
+  my ($self, $method) = (shift, shift);
+  my $res = eval { $self->driver->$method(@_) };
   warn $@ if DEBUG and $@;
-  return $el;
+  return $res;
 }
 
 sub _live_text {
   my $self = shift;
-  my $el   = $self->_live_find_element(shift);
+  my $el = $self->_proxy(find_element => shift);
   return $el ? $el->get_text : '';
 }
 
@@ -274,19 +259,26 @@ Test::Mojo::Role::Selenium - Test::Mojo in a real browser
 
   my $t = Test::Mojo::WithRoles->new("MyApp");
 
-  # Make sure the driver can be initialized
+  # All the standard Test::Mojo methods are available
+  ok $t->isa("Test::Mojo");
+  ok $t->does("Test::Mojo::Role::Selenium");
+
+  # Make sure the selenium driver can be initialized
   plan skip_all => $@ unless eval { $t->driver };
 
-  $t->get_ok("/")->status_is(200)
+  $t->navigate_ok("/")
+    ->status_is(200)
     ->header_is("Server" => "Mojolicious (Perl)")
     ->text_is("div#message" => "Hello!")
-    ->element_exists("nav")
+    ->live_text_is("div#message" => "Hello!")
+    ->live_element_exists("nav")
     ->element_is_displayed("nav")
     ->active_element_is("input[name=q]")
     ->send_keys_ok("input[name=q]", "Mojo")
     ->capture_screenshot;
 
-  $t->submit_ok->status_is(200)
+  $t->submit_ok
+    ->status_is(200)
     ->current_url_like(qr{q=Mojo})
     ->value_is("input[name=q]", "Mojo");
 
@@ -296,11 +288,23 @@ Test::Mojo::Role::Selenium - Test::Mojo in a real browser
 
 =head1 DESCRIPTION
 
-L<Test::Mojo::Role::Selenium> is module that provides a similar interface for testing
-as L<Test::Mojo>, but uses L<Selenium::Remote::Driver> to run the tests inside
-a browser.
+L<Test::Mojo::Role::Selenium> is a role that extends L<Test::Mojo> with
+additional methods which checks behaviour in a browser. All the heavy lifting
+is done by L<Selenium::Remote::Driver>.
+
+Some of the L<Selenium::Remote::Driver> methods are available directly in this
+role, while the rest are available through the object held by the L</driver>
+attribute. Please let me know if you think more tests or methods should be
+provided directly by L<Test::Mojo::Role::Selenium>.
 
 This role is EXPERIMENTAL and subject to change.
+
+=head1 CAVEAT
+
+L<Test::Mojo/tx> is only populated by this role, if the initial request is done
+by passing a relative path to L</navigate_ok>. This means that methods such as
+L<Test::Mojo/header_is> will not work as expected (probably fail completely) if
+L</navigate_ok> is issued with an absolute path like L<http://mojolicious.org>.
 
 =head1 ATTRIBUTES
 
@@ -337,12 +341,6 @@ Where screenshots are saved.
 
 Test that the current active element on the page match the selector.
 
-=head2 body_like
-
-  $self = $self->body_like(qr{My Mojo application});
-
-Test if body in the browser matches the regular expression.
-
 =head2 button_down
 
   $self = $self->button_down;
@@ -354,12 +352,6 @@ See L<Selenium::Remote::Driver/button_down>.
   $self = $self->button_up;
 
 See L<Selenium::Remote::Driver/button_up>.
-
-=head2 cache_status_is
-
-  $self = $self->cache_status_is("uncached");
-
-See L<Selenium::Remote::Driver/cache_status>.
 
 =head2 capture_screenshot
 
@@ -403,14 +395,6 @@ Test if an element is displayed on the web page.
 
 See L<Selenium::Remote::WebElement/is_displayed>.
 
-=head2 element_is_enabled
-
-  $self = $self->element_is_enabled("nav");
-
-Test if an element is enabled on the web page.
-
-See L<Selenium::Remote::WebElement/is_enabled>.
-
 =head2 element_is_hidden
 
   $self = $self->element_is_hidden("nav");
@@ -418,14 +402,6 @@ See L<Selenium::Remote::WebElement/is_enabled>.
 Test if an element is hidden on the web page.
 
 See L<Selenium::Remote::WebElement/is_hidden>.
-
-=head2 element_is_selected
-
-  $self = $self->element_is_selected("nav");
-
-Test if an element is selected on the web page.
-
-See L<Selenium::Remote::WebElement/is_selected>.
 
 =head2 go_back
 
@@ -451,13 +427,6 @@ See L<Test::Mojo/element_exists>.
 
 See L<Test::Mojo/element_exists_not>.
 
-=head2 live_get_ok
-
-  $self = $self->live_get_ok("/");
-  $self = $self->live_get_ok("http://mojolicious.org/");
-
-Open a browser window and go to the given location.
-
 =head2 live_text_is
 
   $self = $self->live_text_is("div.name", "Mojo");
@@ -472,18 +441,18 @@ browser matches the given string.
 Checks text content of the CSS selectors first matching HTML element in the
 browser matches the given regex.
 
+=head2 navigate_ok
+
+  $self = $self->navigate_ok("/");
+  $self = $self->navigate_ok("http://mojolicious.org/");
+
+Open a browser window and go to the given location.
+
 =head2 maximize_window
 
   $self = $self->maximize_window;
 
 See L<Selenium::Remote::Driver/maximize_window>.
-
-=head2 orientation_is
-
-  $self = $self->orientation_is("lanscape");
-  $self = $self->orientation_is("portrait");
-
-Test browser orientation.
 
 =head2 refresh
 
@@ -507,19 +476,12 @@ Select and option, checkbox or radiobutton.
 
 See L<Selenium::Remote::WebElement/set_selected>
 
-=head2 set_orientation
+=head2 set_window_size
 
-  $self = $self->set_orientation("lanscape");
-  $self = $self->set_orientation("portrait");
+  $self = $self->set_window_size([$width, $height]);
+  $self = $self->set_window_size([375, 667]);
 
-See L<Selenium::Remote::Driver/set_orientation>.
-
-=head2 set_window_size_ok
-
-  $self = $self->set_window_size_ok([$width, $height]);
-  $self = $self->set_window_size_ok([375, 667]);
-
-Will set the window size and check if it was set succcessfully.
+Set the browser window size.
 
 =head2 submit_ok
 
@@ -549,6 +511,8 @@ This program is free software, you can redistribute it and/or modify it under
 the terms of the Artistic License version 2.0.
 
 =head1 SEE ALSO
+
+L<Test::Mojo>.
 
 L<Selenium::Remote::Driver>
 
