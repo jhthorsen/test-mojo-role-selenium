@@ -23,10 +23,8 @@ has base => sub {
 
 has driver => sub {
   my $self = shift;
-  my $ua   = Test::Mojo::Selenium::UserAgent->new;
-  Scalar::Util::weaken($ua->{t} = $self);
   warn "[Selenium] Using @{[$self->_driver_class]}\n" if DEBUG;
-  my $driver = $self->_driver_class->new(ua => $ua);
+  my $driver = $self->_driver_class->new(ua => $self->ua);
   $driver->debug_on if DEBUG;
   $driver->default_finder('css');
   return $driver;
@@ -36,18 +34,24 @@ has screenshot_directory => sub { File::Spec->tmpdir };
 
 has _driver_class => 'Selenium::Chrome';
 
+has _live_url => sub { Mojo::URL->new };
+
 has _server => sub {
   my $self   = shift;
   my $app    = $self->app or die 'Cannot start server without $t->app(...) set';
   my $server = Mojo::Server::Daemon->new(silent => DEBUG ? 0 : 1);
 
+  Scalar::Util::weaken($self);
+  $server->on(
+    request => sub {
+      my ($server, $tx) = @_;
+      $self->tx($tx) if $tx->req->url->to_abs eq $self->_live_url;
+    }
+  );
+
   $server->app($app)->listen([$self->base->to_string])
     ->start->ioloop->acceptor($server->acceptors->[0]);
 
-  my $pid = fork;
-  die $! unless defined $pid;
-  exit $server->ioloop->start, 0 unless $pid;
-  $self->{server_pid} = $pid;
   return $server;
 };
 
@@ -119,12 +123,6 @@ sub element_is_hidden {
   return $self->_test('ok', ($el && $el->is_hidden), _desc($desc, "element $selector is hidden"));
 }
 
-sub element_is_visible {
-  my ($self, $selector, $desc) = @_;
-  my $el = $self->_live_find_element($selector);
-  return $self->_test('ok', ($el && $el->is_visible), _desc($desc, "element $selector is visible"));
-}
-
 sub live_element_count_is {
   my ($self, $selector, $count, $desc) = @_;
   my $els = $self->_live_find_elements($selector);
@@ -145,13 +143,29 @@ sub live_element_exists_not {
 }
 
 sub live_get_ok {
-  my ($self, $url) = @_;
+  my $self = shift;
+  my $url  = Mojo::URL->new(shift);
+  my $err;
+
+  unless ($url->is_abs) {
+    my $base = $self->base;
+    $url->scheme($base->scheme)->host($base->host)->port($base->port);
+  }
+
   $self->_server;    # Make sure server is running
-  $self->driver->get($self->_live_url($url));
-  $self->tx->res->body($self->driver->get_page_source);
-  my $err = $self->tx->error;
-  Test::More::diag $err->{message} if !(my $ok = !$err->{message} || $err->{code}) && $err;
-  return $self->_test('ok', $ok, _desc("get $url"));
+  $self->tx(undef);
+  $self->_live_url($url);
+  $self->driver->get($url->to_string);
+
+  if ($self->tx) {
+    $err = $self->tx->error;
+    Test::More::diag($err->{message}) if $err and $err->{message};
+  }
+  else {
+    Test::More::diag('External request? $t->tx() was not set');
+  }
+
+  return $self->_test('ok', !$err, _desc("live get $url"));
 }
 
 sub live_text_is {
@@ -165,6 +179,13 @@ sub live_text_like {
   return $self->_test('like', $self->_live_text($selector),
     $regex, _desc($desc, qq{similar match for selector "$selector"}));
 }
+
+around new => sub {
+  my $next = shift;
+  my $self = $next->(@_);
+  $self->ua(Test::Mojo::Role::Selenium::UserAgent->new->ioloop(Mojo::IOLoop->singleton));
+  return $self;
+};
 
 sub orientation_is {
   my ($self, $exp, $desc) = @_;
@@ -214,16 +235,6 @@ sub _live_text {
   return $el ? $el->get_text : '';
 }
 
-sub _live_url {
-  my $self = shift;
-  my $url  = Mojo::URL->new(shift);
-
-  return $url->to_string if $url->is_abs;
-  my $base = $self->base;
-  $url->scheme($base->scheme)->host($base->host)->port($base->port);
-  return $url->to_string;
-}
-
 sub _screenshot_name {
   local $_ = shift;
   s!\%0\b!{$SCRIPT_NAME}!ge;
@@ -232,16 +243,8 @@ sub _screenshot_name {
   return $_;
 }
 
-sub DESTROY {
-  my $self = shift;
-  return unless my $pid = $self->{server_pid};
-  warn "[Selenium] Shutting down $pid\n" if DEBUG;
-  kill KILL => $pid;
-  wait;
-}
-
 package    # hide from pause
-  Test::Mojo::Selenium::UserAgent;
+  Test::Mojo::Role::Selenium::UserAgent;
 use Mojo::Base 'Mojo::UserAgent';
 
 use constant DEBUG => $ENV{MOJO_SELENIUM_DEBUG} || 0;
@@ -249,11 +252,8 @@ use constant DEBUG => $ENV{MOJO_SELENIUM_DEBUG} || 0;
 sub request {
   my ($ua, $req) = @_;
   my $method = lc $req->method || 'get';
-
   warn "[Selenium] @{[uc $method]} @{[$req->uri->as_string]}\n" if DEBUG;
   my $tx = $ua->$method($req->uri->as_string, {$req->headers->flatten}, $req->content);
-  $ua->{t}->tx($tx) if $ua->{t};    # (in cleanup) Can't call method "tx" on an undefined value
-
   return HTTP::Response->parse($tx->res->to_string);
 }
 
@@ -452,6 +452,20 @@ See L<Test::Mojo/element_exists_not>.
   $self = $self->live_get_ok("http://mojolicious.org/");
 
 Open a browser window and go to the given location.
+
+=head2 live_text_is
+
+  $self = $self->live_text_is("div.name", "Mojo");
+
+Checks text content of the CSS selectors first matching HTML element in the
+browser matches the given string.
+
+=head2 live_text_like
+
+  $self = $self->live_text_is("div.name", qr{Mojo});
+
+Checks text content of the CSS selectors first matching HTML element in the
+browser matches the given regex.
 
 =head2 maximize_window
 
