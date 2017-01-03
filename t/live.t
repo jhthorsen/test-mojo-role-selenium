@@ -3,8 +3,11 @@ use Test::Mojo::WithRoles 'Selenium';
 use Test::More;
 
 use Mojolicious::Lite;
-get '/' => 'index';
+get '/'    => 'index';
+get '/app' => 'app';
 my $t = Test::Mojo::WithRoles->new;
+
+$t->driver_args({driver_class => 'Selenium::Chrome'});
 
 # Make sure the driver can be initialized
 plan skip_all => $@ unless eval { $t->driver };
@@ -36,7 +39,7 @@ __DATA__
 %= form_for '', begin
   %= text_field 'q'
 % end
-%= javascript begin
-document.querySelector("input").focus();
-% end
+%= javascript '/app.js'
 </body>
+@@ app.js.ep
+document.querySelector("input").focus();

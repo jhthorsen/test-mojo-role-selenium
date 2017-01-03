@@ -5,7 +5,6 @@ use Role::Tiny;
 use File::Basename ();
 use File::Spec;
 use Mojo::Util qw(encode monkey_patch);
-use Selenium::Chrome;
 use Selenium::Remote::WDKeys;
 
 use constant DEBUG => $ENV{MOJO_SELENIUM_DEBUG} || 0;
@@ -16,14 +15,15 @@ my $SCRIPT_NAME = File::Basename::basename($0);
 my $SCREENSHOT  = 1;
 
 has driver => sub {
-  my $self         = shift;
-  my $args         = $self->driver_args;
-  my $driver_class = $args->{driver_class} || 'Selenium::Chrome';
-  warn "[Selenium] Using $driver_class\n" if DEBUG;
-  my $driver = $driver_class->new(%$args, ua => $self->ua);
-  $driver->debug_on if DEBUG;
+  my $self   = shift;
+  my $args   = $self->driver_args;
+  my $driver = $ENV{MOJO_SELENIUM_DRIVER} || $args->{driver_class} || 'Selenium::PhantomJS';
+  eval "require $driver;1" or die $@;
+  warn "[Selenium] Using $driver\n" if DEBUG;
+  $driver = $driver->new(%$args, ua => $self->ua);
+  $driver->debug_on if DEBUG > 1;
   $driver->default_finder('css');
-  return $driver;
+  $driver;
 };
 
 has driver_args          => sub { +{} };
@@ -300,23 +300,27 @@ L<Test::Mojo::Role::Selenium> is module that provides a similar interface for te
 as L<Test::Mojo>, but uses L<Selenium::Remote::Driver> to run the tests inside
 a browser.
 
+This role is EXPERIMENTAL and subject to change.
+
 =head1 ATTRIBUTES
 
 =head2 driver
 
   $driver = $self->driver;
-  $self = $self->driver(Selenium::Chrome->new);
 
 An instance of L<Selenium::Remote::Driver>.
 
 =head2 driver_args
 
   $hash = $self->driver_args;
-  $self = $self->driver_args({driver_class => "Selenium::Chrome"});
+  $self = $self->driver_args({driver_class => "Selenium::PhantomJS"});
 
 Used to set args passed on to the L</driver> on construction time. In addition,
 a special key "driver_class" can be set to use another driver class, than the
-default L<Selenium::Chrome>.
+default L<Selenium::PhantomJS>.
+
+Note that the environment variavble C<MOJO_SELENIUM_DRIVER> can also be used to
+override the driver class.
 
 =head2 screenshot_directory
 
@@ -531,7 +535,7 @@ See L<Selenium::Remote::WebElement/submit>.
   $self = $self->window_size_is([$width, $height]);
   $self = $self->window_size_is([375, 667]);
 
-Test if window has the expected widht and height.
+Test if window has the expected width and height.
 
 =head1 AUTHOR
 
