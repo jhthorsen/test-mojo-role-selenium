@@ -41,7 +41,6 @@ has _server => sub {
 sub button_down        { _proxy(button_down        => @_) }
 sub button_up          { _proxy(button_up          => @_) }
 sub capture_screenshot { _proxy(capture_screenshot => @_) }
-sub get_orientation    { _proxy(get_orientation    => @_) }
 sub go_back            { _proxy(go_back            => @_) }
 sub go_forward         { _proxy(go_forward         => @_) }
 sub maximize_window    { _proxy(maximize_window    => @_) }
@@ -58,21 +57,15 @@ sub active_element_is {
   return $self->_test('ok', $same, _desc($desc, "active element is $selector"));
 }
 
-sub cache_status_is {
-  my ($self, $status, $desc) = @_;
-  return $self->_test('is', $self->driver->cache_status,
-    uc $status, _desc($desc, "cache status is $status"));
-}
-
-sub content_like {
+sub body_like {
   my ($self, $regex, $desc) = @_;
   return $self->_test('like', $self->driver->get_body, $regex, _desc($desc, 'content is similar'));
 }
 
-sub content_unlike {
-  my ($self, $regex, $desc) = @_;
-  return $self->_test('unlike', $self->driver->get_body, $regex,
-    _desc($desc, 'content is not similar'));
+sub cache_status_is {
+  my ($self, $status, $desc) = @_;
+  return $self->_test('is', $self->driver->cache_status,
+    uc $status, _desc($desc, "cache status is $status"));
 }
 
 sub click_ok { _element_action(click => @_); }
@@ -129,6 +122,11 @@ sub local_storage_item_like {
   );
 }
 
+sub orientation_is {
+  my ($self, $exp, $desc) = @_;
+  $self->_test('is', lc($self->driver->get_orientation), $exp, _desc($desc, "orientation is $exp"));
+}
+
 sub send_keys_ok {
   my ($self, $selector, $keys, $desc) = @_;
   my $el = $self->driver->find_element($selector);
@@ -139,10 +137,10 @@ sub send_keys_ok {
 sub set_active_element_ok { _element_action(set_selected => @_); }
 
 sub set_window_size_ok {
-  my ($self, $exp, $desc) = @_;
-  $self->driver->set_window_size(@$exp);
+  my ($self, $size, $desc) = @_;
+  $self->driver->set_window_size(@$size);
   local $Test::Builder::Level = $Test::Builder::Level + 1;
-  return $self->window_size_is($exp, $desc);
+  return $self->window_size_is($size, $desc);
 }
 
 sub submit_ok { _element_action(submit => @_); }
@@ -158,8 +156,9 @@ sub title_like {
 }
 
 sub url_is {
-  my ($self, $exp, $desc) = @_;
-  $self->_test('is', $self->driver->get_current_url, $exp, _desc($desc, 'exact match for url'));
+  my ($self, $url, $desc) = @_;
+  $url = Mojo::URL->new($url)->base($self->base)->to_abs;
+  $self->_test('is', $self->driver->get_current_url, $url, _desc($desc, 'exact match for url'));
 }
 
 sub url_like {
@@ -214,7 +213,7 @@ sub _proxy {
 
 # Hack to allow text_is(), text_isnt(), text_like(), ...
 sub _text {
-  my $self = $shift;
+  my $self = shift;
   my $el   = $self->driver->find_element(shift);
   return $el ? $el->get_text : '';
 }
@@ -239,3 +238,240 @@ sub request {
 }
 
 1;
+
+=encoding utf8
+
+=head1 NAME
+
+Test::Mojo::Selenium - Test::Mojo in a real browser
+
+=head1 SYNOPSIS
+
+  use Mojo::Base -strict;
+  use Test::Mojo::Selenium;
+  use Test::More;
+
+  my $t = Test::Mojo::Selenium->new("MyApp");
+  $t->get_ok("/")->status_is(200);
+
+  done_testing;
+
+=head1 DESCRIPTION
+
+L<Test::Mojo::Selenium> is module that provides a similar interface for testing
+as L<Test::Mojo>, but uses L<Selenium::Remote::Driver> to run the tests inside
+a browser.
+
+=head1 ATTRIBUTES
+
+=head2 base
+
+  $url = $self->base;
+  $self = $self->base(Mojo::URL->new("http://127.0.0.1:3000"));
+
+=head2 driver
+
+  $driver = $self->driver;
+  $self = $self->driver(Selenium::Chrome->new);
+
+=head1 METHODS
+
+=head2 active_element_is
+
+  $self = $self->active_element_is("input[name=username]");
+
+=head2 body_like
+
+  $self = $self->body_like(qr{My Mojo application});
+
+Checks if body in the browser matches the regular expression.
+
+=head2 button_down
+
+  $self = $self->button_down;
+
+See L<Selenium::Remote::Driver/button_down>.
+
+=head2 button_up
+
+  $self = $self->button_up;
+
+See L<Selenium::Remote::Driver/button_up>.
+
+=head2 cache_status_is
+
+  $self = $self->cache_status_is("uncached");
+
+=head2 capture_screenshot
+
+  $self = $self->capture_screenshot;
+
+TODO: Capture screenthot to L</screenthot_directory> with the current URL and
+timestamp as filename.
+
+=head2 click_ok
+
+  $self = $self->click_ok("a", "left");
+
+Click on an element.
+
+=head2 element_count_is
+
+See L<Test::Mojo/element_count_is>.
+
+=head2 element_exists
+
+See L<Test::Mojo/element_exists>.
+
+=head2 element_exists_not
+
+See L<Test::Mojo/element_exists_not>.
+
+=head2 element_is_displayed
+
+  $self = $self->element_is_displayed("nav");
+
+Checks if an element is displayed on the web page.
+
+=head2 element_is_enabled
+
+  $self = $self->element_is_displayed("nav");
+
+Checks if an element is displayed on the web page.
+
+=head2 element_is_hidden
+
+  $self = $self->element_is_hidden("nav");
+
+Checks if an element is hidden on the web page.
+
+=head2 element_is_selected
+
+  $self = $self->element_is_selected("nav");
+
+Checks if an element is selected on the web page.
+
+=head2 get_ok
+
+  $self = $self->get_ok("/");
+
+Open a browser window and point to the given location.
+
+=head2 go_back
+
+  $self = $self->go_back;
+
+See L<Selenium::Remote::Driver/go_back>.
+
+=head2 go_forward
+
+  $self = $self->go_forward;
+
+See L<Selenium::Remote::Driver/go_forward>.
+
+=head2 local_storage_item_is
+
+  $self = $self->local_storage_item_is("key_name", "value");
+
+=head2 local_storage_item_like
+
+  $self = $self->local_storage_item_like("key_name", qr{value});
+
+=head2 maximize_window
+
+  $self = $self->maximize_window;
+
+See L<Selenium::Remote::Driver/maximize_window>.
+
+=head2 orientation_is
+
+  $self = $self->orientation_is("lanscape");
+  $self = $self->orientation_is("portrait");
+
+=head2 refresh
+
+  $self = $self->refresh;
+
+See L<Selenium::Remote::Driver/refresh>.
+
+=head2 send_keys_ok
+
+  $self->send_keys_ok("input[name=username]", "jhthorsen");
+  $self->send_keys_ok("input[name=name]", ["jan", \"space", "henning"]);
+
+Used to sen keys to a given element. Escaped strings will be sent as
+L<Selenium::Remote::WDKeys> strings.
+
+=head2 set_active_element_ok
+
+  $self = $self->set_active_element_ok("input[name=email]");
+
+=head2 set_orientation
+
+  $self = $self->set_orientation("lanscape");
+  $self = $self->set_orientation("portrait");
+
+See L<Selenium::Remote::Driver/set_orientation>.
+
+=head2 set_window_size_ok
+
+  $self = $self->set_window_size_ok([$width, $height]);
+  $self = $self->set_window_size_ok([375, 667]);
+
+=head2 submit_ok
+
+  $self = $self->submit_ok("form");
+
+=head2 title_is
+
+  $self = $self->title_is("my cool page");
+
+Test the current browser title.
+
+=head2 title_like
+
+  $self = $self->title_like(qr{my cool page});
+
+Test the current browser title.
+
+=head2 url_is
+
+  $self = $self->url_is("http://google.com");
+  $self = $self->url_is("/whatever");
+
+Test the current browser URL.
+
+=head2 url_like
+
+  $self = $self->url_like(qr{/whatever});
+
+Test the current browser URL.
+
+=head2 value_is
+
+  $self = $self->value_is("input[name=username]", "jhthorsen");
+
+=head2 value_like
+
+  $self = $self->value_is("input[name=username]", qr{jhthorsen});
+
+=head2 window_size_is
+
+  $self = $self->window_size_is([375, 667]);
+
+=head1 AUTHOR
+
+Jan Henning Thorsen
+
+=head1 COPYRIGHT AND LICENSE
+
+Copyright (C) 2014, Jan Henning Thorsen
+
+This program is free software, you can redistribute it and/or modify it under
+the terms of the Artistic License version 2.0.
+
+=head1 SEE ALSO
+
+L<Selenium::Remote::Driver>
+
+=cut
