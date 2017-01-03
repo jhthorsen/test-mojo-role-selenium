@@ -3,11 +3,14 @@ use Mojo::Base 'Test::Mojo';
 
 use File::Basename ();
 use File::Spec;
-use Mojo::Util qw(encode steady_time);
+use Mojo::Util 'encode';
 use Selenium::Chrome;
 use Selenium::Remote::WDKeys;
 
 our $VERSION = '0.01';
+
+my $SCRIPT_NAME = File::Basename::basename($0);
+my $SCREENSHOT  = 1;
 
 has base => sub {
   my $self = shift;
@@ -73,8 +76,8 @@ sub cache_status_is {
 
 sub capture_screenshot {
   my ($self, $name) = @_;
-  $name ||= join '-', File::Basename::basename($0), steady_time;
-  $self->driver->capture_screenshot(File::Spec->catfile($self->screenshot_directory, "$name.png"));
+  $name ||= _screenshot_name($name ? "$name.png" : "%0-%t-%n.png");
+  $self->driver->capture_screenshot(File::Spec->catfile($self->screenshot_directory, $name));
   return $self;
 }
 
@@ -144,7 +147,7 @@ sub send_keys_ok {
   return $self->_test('ok', $el, _desc($desc, "keys sent to $selector"));
 }
 
-sub set_active_element_ok { _element_action(set_selected => @_); }
+sub set_selected_element_ok { _element_action(set_selected => @_); }
 
 sub set_window_size_ok {
   my ($self, $size, $desc) = @_;
@@ -221,6 +224,14 @@ sub _proxy {
   return $self;
 }
 
+sub _screenshot_name {
+  local $_ = shift;
+  s!\%0\b!{$SCRIPT_NAME}!ge;
+  s!\%n\b!{sprintf '%04s', $SCREENSHOT++}!ge;
+  s!\%t\b!{$^T}!ge;
+  return $_;
+}
+
 # Hack to allow text_is(), text_isnt(), text_like(), ...
 sub _text {
   my $self = shift;
@@ -262,7 +273,21 @@ Test::Mojo::Selenium - Test::Mojo in a real browser
   use Test::More;
 
   my $t = Test::Mojo::Selenium->new("MyApp");
-  $t->get_ok("/")->status_is(200);
+
+  $t->get_ok("/")->status_is(200)
+    ->header_is("Server" => "Mojolicious (Perl)")
+    ->text_is("div#message" => "Hello!")
+    ->element_exists("nav")
+    ->element_is_displayed("nav")
+    ->active_element_is("input[name=q]")
+    ->send_keys_ok("input[name=q]", "Mojo")
+    ->capture_screenshot;
+
+  $t->submit_ok->status_is(200)
+    ->url_like(qr{q=Mojo})
+    ->value_is("input[name=q]", "Mojo");
+
+  $t->click_ok("nav a.logo")->status_is(200);
 
   done_testing;
 
@@ -279,10 +304,16 @@ a browser.
   $url = $self->base;
   $self = $self->base(Mojo::URL->new("http://127.0.0.1:3000"));
 
+Base URL to L<Mojo::Server::Daemon> instance that the selenium driver connect to.
+
 =head2 driver
 
   $driver = $self->driver;
   $self = $self->driver(Selenium::Chrome->new);
+
+An instance of L<Selenium::Chrome>.
+
+TODO: Add support for other browsers.
 
 =head2 screenshot_directory
 
@@ -297,11 +328,13 @@ Where screenshots are saved.
 
   $self = $self->active_element_is("input[name=username]");
 
+Test that the current active element on the page match the selector.
+
 =head2 body_like
 
   $self = $self->body_like(qr{My Mojo application});
 
-Checks if body in the browser matches the regular expression.
+Test if body in the browser matches the regular expression.
 
 =head2 button_down
 
@@ -319,13 +352,22 @@ See L<Selenium::Remote::Driver/button_up>.
 
   $self = $self->cache_status_is("uncached");
 
+See L<Selenium::Remote::Driver/cache_status>.
+
 =head2 capture_screenshot
 
-  $self = $self->capture_screenshot($name);
   $self = $self->capture_screenshot;
+  $self = $self->capture_screenshot("%t-page-x");
+  $self = $self->capture_screenshot("%0-%t-%n");
 
-Capture screenthot to L</screenshot_directory> with the current timestamp or
-C<$name> as filename.
+Capture screenthot to L</screenshot_directory> with filename specified by the
+input format. The format supports these special strings:
+
+  Format | Description
+  -------|----------------------
+  %t     | Start time for script
+  %0     | Name of script
+  %n     | Auto increment
 
 =head2 click_ok
 
@@ -349,31 +391,40 @@ See L<Test::Mojo/element_exists_not>.
 
   $self = $self->element_is_displayed("nav");
 
-Checks if an element is displayed on the web page.
+Test if an element is displayed on the web page.
+
+See L<Selenium::Remote::WebElement/is_displayed>.
 
 =head2 element_is_enabled
 
-  $self = $self->element_is_displayed("nav");
+  $self = $self->element_is_enabled("nav");
 
-Checks if an element is displayed on the web page.
+Test if an element is enabled on the web page.
+
+See L<Selenium::Remote::WebElement/is_enabled>.
 
 =head2 element_is_hidden
 
   $self = $self->element_is_hidden("nav");
 
-Checks if an element is hidden on the web page.
+Test if an element is hidden on the web page.
+
+See L<Selenium::Remote::WebElement/is_hidden>.
 
 =head2 element_is_selected
 
   $self = $self->element_is_selected("nav");
 
-Checks if an element is selected on the web page.
+Test if an element is selected on the web page.
+
+See L<Selenium::Remote::WebElement/is_selected>.
 
 =head2 get_ok
 
   $self = $self->get_ok("/");
+  $self = $self->get_ok("http://mojolicious.org/");
 
-Open a browser window and point to the given location.
+Open a browser window and go to the given location.
 
 =head2 go_back
 
@@ -391,9 +442,13 @@ See L<Selenium::Remote::Driver/go_forward>.
 
   $self = $self->local_storage_item_is("key_name", "value");
 
+Test if a local storage item stored under "key_name" is the same as "value".
+
 =head2 local_storage_item_like
 
   $self = $self->local_storage_item_like("key_name", qr{value});
+
+Test if a local storage item stored under "key_name" match "value".
 
 =head2 maximize_window
 
@@ -406,6 +461,8 @@ See L<Selenium::Remote::Driver/maximize_window>.
   $self = $self->orientation_is("lanscape");
   $self = $self->orientation_is("portrait");
 
+Test browser orientation.
+
 =head2 refresh
 
   $self = $self->refresh;
@@ -417,12 +474,16 @@ See L<Selenium::Remote::Driver/refresh>.
   $self->send_keys_ok("input[name=username]", "jhthorsen");
   $self->send_keys_ok("input[name=name]", ["jan", \"space", "henning"]);
 
-Used to sen keys to a given element. Escaped strings will be sent as
+Used to sen keys to a given element. Scalar refs will be sent as
 L<Selenium::Remote::WDKeys> strings.
 
-=head2 set_active_element_ok
+=head2 set_selected_element_ok
 
-  $self = $self->set_active_element_ok("input[name=email]");
+  $self = $self->set_selected_element_ok("input[name=email]");
+
+Select and option, checkbox or radiobutton.
+
+See L<Selenium::Remote::WebElement/set_selected>
 
 =head2 set_orientation
 
@@ -436,9 +497,16 @@ See L<Selenium::Remote::Driver/set_orientation>.
   $self = $self->set_window_size_ok([$width, $height]);
   $self = $self->set_window_size_ok([375, 667]);
 
+Will set the window size and check if it was set succcessfully.
+
 =head2 submit_ok
 
   $self = $self->submit_ok("form");
+  $self = $self->submit_ok;
+
+Submit a form, either by selector or the current active form.
+
+See L<Selenium::Remote::WebElement/submit>.
 
 =head2 title_is
 
@@ -454,7 +522,7 @@ Test the current browser title.
 
 =head2 url_is
 
-  $self = $self->url_is("http://google.com");
+  $self = $self->url_is("http://mojolicious.org/");
   $self = $self->url_is("/whatever");
 
 Test the current browser URL.
@@ -469,13 +537,20 @@ Test the current browser URL.
 
   $self = $self->value_is("input[name=username]", "jhthorsen");
 
+Test if the value for an input is "jhthorsen".
+
 =head2 value_like
 
   $self = $self->value_is("input[name=username]", qr{jhthorsen});
 
+Test if the value for an input match "jhthorsen".
+
 =head2 window_size_is
 
+  $self = $self->window_size_is([$width, $height]);
   $self = $self->window_size_is([375, 667]);
+
+Test if window has the expected widht and height.
 
 =head1 AUTHOR
 
