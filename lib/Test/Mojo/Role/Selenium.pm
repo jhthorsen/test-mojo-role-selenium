@@ -29,15 +29,13 @@ has driver => sub {
 has driver_args          => sub { +{} };
 has screenshot_directory => sub { File::Spec->tmpdir };
 
-has _base => sub {
+has _live_base => sub {
   my $self = shift;
   my $port = Mojo::IOLoop::Server->generate_port;
   return Mojo::URL->new("http://127.0.0.1:$port");
 };
 
-has _live_url => sub { Mojo::URL->new };
-
-has _server => sub {
+has _live_server => sub {
   my $self   = shift;
   my $app    = $self->app or die 'Cannot start server without $t->app(...) set';
   my $server = Mojo::Server::Daemon->new(silent => DEBUG ? 0 : 1);
@@ -50,11 +48,13 @@ has _server => sub {
     }
   );
 
-  $server->app($app)->listen([$self->_base->to_string])
+  $server->app($app)->listen([$self->_live_base->to_string])
     ->start->ioloop->acceptor($server->acceptors->[0]);
 
   return $server;
 };
+
+has _live_url => sub { Mojo::URL->new };
 
 sub active_element_is {
   my ($self, $selector, $desc) = @_;
@@ -145,8 +145,8 @@ sub navigate_ok {
   my $err;
 
   $self->_live_url($self->_live_abs_url($url));
+  $self->_live_server;    # Make sure server is running
   $self->tx(undef);
-  $self->_server;    # Make sure server is running
   $self->driver->get($self->_live_url->to_string);
 
   if ($self->tx) {
@@ -201,7 +201,7 @@ sub _live_abs_url {
   my $url  = Mojo::URL->new(shift);
 
   unless ($url->is_abs) {
-    my $base = $self->_base;
+    my $base = $self->_live_base;
     $url->scheme($base->scheme)->host($base->host)->port($base->port);
   }
 
