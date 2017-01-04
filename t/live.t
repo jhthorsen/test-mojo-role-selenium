@@ -11,7 +11,7 @@ my $t = Test::Mojo::WithRoles->new;
 $t->driver_args({driver_class => 'Selenium::Chrome'});
 
 # Make sure the driver can be initialized
-plan skip_all => $@ unless eval { $t->driver };
+plan skip_all => $@ || 'TEST_LIVE=1' unless $ENV{TEST_LIVE} and eval { $t->driver };
 
 $t->set_window_size([1024, 768])->navigate_ok('/')->status_is(200)->text_is('a.logo' => 'Logo')
   ->live_text_is('a.logo' => 'Logo')->live_element_exists('nav')->element_is_displayed('nav')
