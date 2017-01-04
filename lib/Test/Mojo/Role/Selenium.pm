@@ -301,6 +301,37 @@ provided directly by L<Test::Mojo::Role::Selenium>.
 
 This role is EXPERIMENTAL and subject to change.
 
+=head1 OPTIONAL DEPENDENCIES
+
+L<Selenium::Remote::Driver> require some external dependencies to work. Here
+are a quick intro to install some of the dependencies to make this module work.
+
+=over 2
+
+=item * L<Selenium::Chrome>
+
+  # osx
+  $ brew install chromedriver
+
+  # ubuntu
+  $ sudo apt-get install chromium-chromedriver
+
+  # run tests
+  $ MOJO_SELENIUM_DRIVER=Selenium::Chrome prove -l
+
+=item * L<Selenium::PhantomJS>
+
+  # osx
+  $ brew install phantomjs
+
+  # ubuntu
+  $ sudo apt-get install phantomjs
+
+  # run tests
+  $ MOJO_SELENIUM_DRIVER=Selenium::PhantomJS prove -l
+
+=back
+
 =head1 CAVEAT
 
 L<Test::Mojo/tx> is only populated by this role, if the initial request is done
