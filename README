@@ -2,6 +2,32 @@ NAME
     Test::Mojo::Role::Selenium - Test::Mojo in a real browser
 
 SYNOPSIS
+  External app
+      use Mojo::Base -strict;
+      use Test::Mojo::WithRoles "Selenium";
+      use Test::More;
+
+      my $t = Test::Mojo::WithRoles->new;
+
+      $ENV{MOJO_SELENIUM_BASE_URL} = $ENV{TEST_BASE_URL} || '';
+      $ENV{MOJO_SELENIUM_DRIVER} ||= 'Selenium::Chrome';
+
+      plan skip_all => $@ || 'TEST_BASE_URL=http://mojolicious.org'
+        unless $ENV{TEST_BASE_URL} and eval { $t->driver };
+
+      $t->navigate_ok('/perldoc')
+        ->live_text_is('a[href="#GUIDES"]' => 'GUIDES');
+
+      $t->driver->execute_script(qq[document.querySelector("form").removeAttribute("target")]);
+      $t->element_is_displayed("input[name=q]")
+        ->send_keys_ok("input[name=q]", ["render", \"return"]);
+
+      $t->wait_for_url(qr{q=render})
+        ->live_value_is("input[name=search]", "render");
+
+      done_testing;
+
+  Internal app
       use Mojo::Base -strict;
       use Test::Mojo::WithRoles "Selenium";
       use Test::More;
@@ -26,10 +52,10 @@ SYNOPSIS
         ->send_keys_ok("input[name=q]", "Mojo")
         ->capture_screenshot;
 
-      $t->submit_ok
+      $t->submit_ok("form")
         ->status_is(200)
         ->current_url_like(qr{q=Mojo})
-        ->value_is("input[name=q]", "Mojo");
+        ->live_element_exists("input[name=q][value=Mojo]");
 
       $t->click_ok("nav a.logo")->status_is(200);
 
@@ -119,22 +145,12 @@ METHODS
   active_element_is
       $self = $self->active_element_is("input[name=username]");
 
-    Test that the current active element on the page match the selector.
-
-  button_down
-      $self = $self->button_down;
-
-    See "button_down" in Selenium::Remote::Driver.
-
-  button_up
-      $self = $self->button_up;
-
-    See "button_up" in Selenium::Remote::Driver.
+    Checks that the current active element on the page match the selector.
 
   capture_screenshot
       $self = $self->capture_screenshot;
       $self = $self->capture_screenshot("%t-page-x");
-      $self = $self->capture_screenshot("%0-%t-%n");
+      $self = $self->capture_screenshot("%0-%t-%n"); # default
 
     Capture screenshot to "screenshot_directory" with filename specified by
     the input format. The format supports these special strings:
@@ -146,7 +162,7 @@ METHODS
       %n     | Auto increment
 
   click_ok
-      $self = $self->click_ok("a", "left");
+      $self = $self->click_ok("a");
 
     Click on an element.
 
@@ -154,12 +170,13 @@ METHODS
       $self = $self->current_url_is("http://mojolicious.org/");
       $self = $self->current_url_is("/whatever");
 
-    Test the current browser URL.
+    Test the current browser URL against an absolute URL. A relative URL
+    will be converted to an absolute URL, using "MOJO_SELENIUM_BASE_URL".
 
   current_url_like
       $self = $self->current_url_like(qr{/whatever});
 
-    Test the current browser URL.
+    Test the current browser URL against a regex.
 
   element_is_displayed
       $self = $self->element_is_displayed("nav");
@@ -178,20 +195,39 @@ METHODS
   go_back
       $self = $self->go_back;
 
+    Equivalent to hitting the back button on the browser.
+
     See "go_back" in Selenium::Remote::Driver.
 
   go_forward
       $self = $self->go_forward;
 
+    Equivalent to hitting the forward button on the browser.
+
     See "go_forward" in Selenium::Remote::Driver.
 
   live_element_count_is
+      $self = $self->live_element_count_is("a", 12);
+
+    Checks that the selector finds the correct number of elements in the
+    browser.
+
     See "element_count_is" in Test::Mojo.
 
   live_element_exists
+      $self = $self->live_element_exists("div.content");
+
+    Checks that the selector finds an element in the browser.
+
     See "element_exists" in Test::Mojo.
 
   live_element_exists_not
+      $self = $self->live_element_exists_not("div.content");
+
+    Checks that the selector does not find an element in the browser.
+
+      $self = $self->live_element_exists("div.foo");
+
     See "element_exists_not" in Test::Mojo.
 
   live_text_is
@@ -206,19 +242,28 @@ METHODS
     Checks text content of the CSS selectors first matching HTML element in
     the browser matches the given regex.
 
+  live_value_is
+      $self = $self->live_value_is("div.name", "Mojo");
+
+    Checks value of the CSS selectors first matching HTML element in the
+    browser matches the given string.
+
+  live_value_like
+      $self = $self->live_value_like("div.name", qr{Mojo});
+
+    Checks value of the CSS selectors first matching HTML element in the
+    browser matches the given regex.
+
   navigate_ok
       $self = $self->navigate_ok("/");
       $self = $self->navigate_ok("http://mojolicious.org/");
 
     Open a browser window and go to the given location.
 
-  maximize_window
-      $self = $self->maximize_window;
-
-    See "maximize_window" in Selenium::Remote::Driver.
-
   refresh
       $self = $self->refresh;
+
+    Equivalent to hitting the refresh button on the browser.
 
     See "refresh" in Selenium::Remote::Driver.
 
@@ -229,12 +274,17 @@ METHODS
     Used to sen keys to a given element. Scalar refs will be sent as
     Selenium::Remote::WDKeys strings.
 
-  set_selected_element_ok
-      $self = $self->set_selected_element_ok("input[name=email]");
+    List of some of the special keys:
 
-    Select and option, checkbox or radiobutton.
+    * alt, control, shift
 
-    See "set_selected" in Selenium::Remote::WebElement
+    * right_arrow, down_arrow, left_arrow, up_arrow
+
+    * backspace, clear, delete, enter, return, escape, space, tab
+
+    * f1, f2, ..., f12
+
+    * command_meta, pause
 
   set_window_size
       $self = $self->set_window_size([$width, $height]);
@@ -244,11 +294,16 @@ METHODS
 
   submit_ok
       $self = $self->submit_ok("form");
-      $self = $self->submit_ok;
 
     Submit a form, either by selector or the current active form.
 
     See "submit" in Selenium::Remote::WebElement.
+
+  wait_for_url
+      $self = $self->wait_for_url(qr{/whatever});
+
+    Will sleep until the URL in the browser changes to something that
+    matches the given regex.
 
   window_size_is
       $self = $self->window_size_is([$width, $height]);
