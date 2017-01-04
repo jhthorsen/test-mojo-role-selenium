@@ -242,7 +242,7 @@ sub set_window_size {
   return $self;
 }
 
-sub skip_all_or_setup {
+sub setup_or_skip_all {
   my $self = shift;
 
   local $@;
@@ -353,7 +353,7 @@ Test::Mojo::Role::Selenium - Test::Mojo in a real browser
 
   $ENV{MOJO_SELENIUM_DRIVER} ||= 'Selenium::Chrome';
 
-  my $t = Test::Mojo::WithRoles->new->skip_all_or_setup;
+  my $t = Test::Mojo::WithRoles->new->setup_or_skip_all;
 
   $t->navigate_ok('/perldoc')
     ->live_text_is('a[href="#GUIDES"]' => 'GUIDES');
@@ -373,7 +373,7 @@ Test::Mojo::Role::Selenium - Test::Mojo in a real browser
   use Test::Mojo::WithRoles "Selenium";
   use Test::More;
 
-  my $t = Test::Mojo::WithRoles->new("MyApp")->skip_all_or_setup;
+  my $t = Test::Mojo::WithRoles->new("MyApp")->setup_or_skip_all;
 
   # All the standard Test::Mojo methods are available
   ok $t->isa("Test::Mojo");
@@ -678,9 +678,9 @@ List of some of the special keys:
 
 Set the browser window size.
 
-=head2 skip_all_or_setup
+=head2 setup_or_skip_all
 
-  $self = $self->skip_all_or_setup;
+  $self = $self->setup_or_skip_all;
 
 Will L<skip all#Test::More/skip_all> tests unless C<TEST_SELENIUM> is set and
 and L</driver> can be built.

@@ -7,7 +7,7 @@ use Mojolicious::Lite;
 get '/'    => 'index';
 get '/app' => 'app';
 
-my $t = Test::Mojo::WithRoles->new->skip_all_or_setup;
+my $t = Test::Mojo::WithRoles->new->setup_or_skip_all;
 
 $t->driver_args({driver_class => 'Selenium::Chrome'});
 
