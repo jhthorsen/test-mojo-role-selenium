@@ -33,7 +33,7 @@ is $t->_live_base, 'http://mojolicious.org', 'base url';
 done_testing;
 
 sub mock_driver {
-  return eval <<'HERE' or die $@;
+  return eval <<'HERE' || die $@;
   package Test::Mojo::Role::Selenium::MockDriver;
   sub debug_on {}
   sub default_finder {}

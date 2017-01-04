@@ -201,7 +201,9 @@ sub navigate_ok {
 around new => sub {
   my $next = shift;
   my $self = $next->(@_);
+  my $app  = $self->app;
   $self->ua(Test::Mojo::Role::Selenium::UserAgent->new->ioloop(Mojo::IOLoop->singleton));
+  $self->app($app) if $app;
   return $self;
 };
 

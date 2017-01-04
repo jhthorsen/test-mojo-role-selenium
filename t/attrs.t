@@ -24,10 +24,19 @@ $t->navigate_ok('/perldoc');
 is $t->_live_url, 'http://mojolicious.org/perldoc', 'live url';
 ok !$t->{_live_server}, 'server not built';
 
+eval <<'HERE' or die $@;
+package MyApp;
+use Mojo::Base 'Mojolicious';
+1;
+HERE
+
+$t = Test::Mojo::WithRoles->new('MyApp');
+isa_ok($t->app, 'MyApp');
+
 done_testing;
 
 sub mock_driver {
-  return eval <<'HERE' or die $@;
+  return eval <<'HERE' || die $@;
   package Test::Mojo::Role::Selenium::MockDriver;
   sub debug_on {}
   sub default_finder {}

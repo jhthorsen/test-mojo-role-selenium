@@ -1,14 +1,15 @@
 Revision history for perl distribution Test-Mojo-Role-Selenium
 
 0.04 Not Released
+ - Fix $t->app()
  - Add if_tx()
  - Add skip_all_or_setup()
 
 0.03 2017-01-04T11:19:34+0100
+ - Fix send_keys_ok() with special keys
  - Add live_value_is() and live_value_like()
  - Add wait_for_url()
  - Add missing method go_back(), go_forward() and refresh()
- - Fix send_keys_ok() with special keys
  - More robust send_keys_ok() for invisible elements
 
 0.02 2017-01-04T09:26:41+0100
