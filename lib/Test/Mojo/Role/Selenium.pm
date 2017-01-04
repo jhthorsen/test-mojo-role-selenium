@@ -515,14 +515,6 @@ See L<Selenium::Remote::Driver/refresh>.
 Used to sen keys to a given element. Scalar refs will be sent as
 L<Selenium::Remote::WDKeys> strings.
 
-=head2 set_selected_element_ok
-
-  $self = $self->set_selected_element_ok("input[name=email]");
-
-Select and option, checkbox or radiobutton.
-
-See L<Selenium::Remote::WebElement/set_selected>
-
 =head2 set_window_size
 
   $self = $self->set_window_size([$width, $height]);
