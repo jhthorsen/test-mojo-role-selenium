@@ -172,7 +172,17 @@ around new => sub {
 sub send_keys_ok {
   my ($self, $selector, $keys, $desc) = @_;
   my $el = $self->_proxy(find_element => $selector);
-  map { $el->send_keys(ref $_ ? KEYS->{$_} : $_) } ref $keys ? @$keys : ($keys) if $el;
+
+  if ($el) {
+    eval {
+      $el->send_keys(ref $_ ? KEYS->{$_} : $_) for ref $keys ? @$keys : ($keys);
+      1;
+    } or do {
+      Test::More::diag($@);
+      $el = undef;
+    };
+  }
+
   return $self->_test('ok', $el, _desc($desc, "keys sent to $selector"));
 }
 
@@ -255,6 +265,33 @@ Test::Mojo::Role::Selenium - Test::Mojo in a real browser
 
 =head1 SYNOPSIS
 
+=head2 External app
+
+  use Mojo::Base -strict;
+  use Test::Mojo::WithRoles "Selenium";
+  use Test::More;
+
+  my $t = Test::Mojo::WithRoles->new;
+
+  $ENV{MOJO_SELENIUM_BASE_URL} = $ENV{TEST_BASE_URL} || '';
+  $ENV{MOJO_SELENIUM_DRIVER} ||= 'Selenium::Chrome';
+
+  plan skip_all => $@ || 'TEST_BASE_URL=http://mojolicious.org'
+    unless $ENV{TEST_BASE_URL} and eval { $t->driver };
+
+  $t->navigate_ok('/perldoc')
+    ->live_text_is('a[href="#GUIDES"]' => 'GUIDES');
+
+  $t->element_is_displayed("input[name=q]")
+    ->send_keys_ok("input[name=q]", ["render", \"enter"]);
+
+  $t->current_url_like(qr{q=render})
+    ->live_element_exists("input[name=search][value=render]");
+
+  done_testing;
+
+=head2 Internal app
+
   use Mojo::Base -strict;
   use Test::Mojo::WithRoles "Selenium";
   use Test::More;
@@ -279,10 +316,10 @@ Test::Mojo::Role::Selenium - Test::Mojo in a real browser
     ->send_keys_ok("input[name=q]", "Mojo")
     ->capture_screenshot;
 
-  $t->submit_ok
+  $t->submit_ok("form")
     ->status_is(200)
     ->current_url_like(qr{q=Mojo})
-    ->value_is("input[name=q]", "Mojo");
+    ->live_element_exists("input[name=q][value=Mojo]");
 
   $t->click_ok("nav a.logo")->status_is(200);
 

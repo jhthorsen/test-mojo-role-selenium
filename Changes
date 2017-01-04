@@ -1,5 +1,8 @@
 Revision history for perl distribution Test-Mojo-Role-Selenium
 
+0.03 Not Released
+ - More robust send_keys_ok() for invisible elements
+
 0.02 2017-01-04T09:26:41+0100
  - Add support for MOJO_SELENIUM_BASE_URL
 
