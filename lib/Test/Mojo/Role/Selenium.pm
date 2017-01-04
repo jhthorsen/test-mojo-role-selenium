@@ -114,6 +114,18 @@ sub element_is_hidden {
 sub go_back    { $_[0]->_proxy('go_back');    $_[0] }
 sub go_forward { $_[0]->_proxy('go_forward'); $_[0] }
 
+sub if_tx {
+  my ($self, $method) = (shift, shift);
+
+SKIP: {
+    my $desc = ref $method ? '__SUB__' : $method;
+    Test::More::skip("\$t->tx() is not defined ($desc)", 1) unless $self->tx;
+    $self->$method(@_);
+  }
+
+  return $self;
+}
+
 sub live_element_count_is {
   my ($self, $selector, $count, $desc) = @_;
   my $els = $self->_proxy(find_elements => $selector);
@@ -546,6 +558,18 @@ See L<Selenium::Remote::Driver/go_back>.
 Equivalent to hitting the forward button on the browser.
 
 See L<Selenium::Remote::Driver/go_forward>.
+
+=head2 if_tx
+
+  $self = $self->if_tx(sub { ... }, @args);
+  $self = $self->if_tx($method, @args);
+
+Call either a code ref or a method on C<$self> if L<Test::Mojo/tx> is defined.
+C<tx()> is undefined if L</navigate_ok> is called on an external resource.
+
+Examples:
+
+  $self->if_tx(status_is => 200);
 
 =head2 live_element_count_is
 

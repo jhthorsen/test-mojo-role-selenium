@@ -11,12 +11,13 @@ my $t = Test::Mojo::WithRoles->new;
 $t->driver_args({driver_class => 'Selenium::Chrome'});
 
 # Make sure the driver can be initialized
+$ENV{TEST_LIVE} //= $ENV{TEST_BASE_URL} || 0;
 plan skip_all => $@ || 'TEST_LIVE=1' unless $ENV{TEST_LIVE} and eval { $t->driver };
 
-$t->set_window_size([1024, 768])->navigate_ok('/')->status_is(200)->text_is('a.logo' => 'Logo')
-  ->live_text_is('a.logo' => 'Logo')->live_element_exists('nav')->element_is_displayed('nav')
-  ->element_is_hidden('a[href="/hidden"]')->active_element_is('input[name=q]')
-  ->send_keys_ok('input[name=q]', 'Mojo');
+$t->set_window_size([1024, 768])->navigate_ok('/')->if_tx(status_is => 200)
+  ->text_is('a.logo' => 'Logo')->live_text_is('a.logo' => 'Logo')->live_element_exists('nav')
+  ->element_is_displayed('nav')->element_is_hidden('a[href="/hidden"]')
+  ->active_element_is('input[name=q]')->send_keys_ok('input[name=q]', 'Mojo');
 
 $t->window_size_is([1024, 768])->submit_ok('form')->status_is(200)
   ->current_url_like(qr{\bq=Mojo\b})->live_element_exists('input[name=q][value=Mojo]')
