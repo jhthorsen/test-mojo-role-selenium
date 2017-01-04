@@ -1,5 +1,8 @@
 Revision history for perl distribution Test-Mojo-Role-Selenium
 
+0.02 Not Released
+ - Add support for MOJO_SELENIUM_BASE_URL
+
 0.01 2017-01-04T00:18:18+0100
  - Started project
  - Marked role as EXPERIMENTAL

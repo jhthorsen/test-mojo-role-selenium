@@ -31,8 +31,9 @@ has screenshot_directory => sub { File::Spec->tmpdir };
 
 has _live_base => sub {
   my $self = shift;
-  my $port = Mojo::IOLoop::Server->generate_port;
-  return Mojo::URL->new("http://127.0.0.1:$port");
+  return Mojo::URL->new($ENV{MOJO_SELENIUM_BASE_URL}) if $ENV{MOJO_SELENIUM_BASE_URL};
+  $self->{live_port} = Mojo::IOLoop::Server->generate_port;
+  return Mojo::URL->new("http://127.0.0.1:$self->{live_port}");
 };
 
 has _live_server => sub {
@@ -141,23 +142,24 @@ sub live_text_like {
 }
 
 sub navigate_ok {
-  my ($self, $url) = @_;
-  my $err;
+  my $self = shift;
+  my $url  = $self->_live_abs_url(shift);
+  my ($desc, $err);
 
-  $self->_live_url($self->_live_abs_url($url));
-  $self->_live_server;    # Make sure server is running
-  $self->tx(undef);
-  $self->driver->get($self->_live_url->to_string);
+  $self->tx(undef)->_live_url($url);
+  $self->_live_server if $self->{live_port};    # Make sure server is running
+  $self->driver->get($url->to_string);
 
   if ($self->tx) {
-    $err = $self->tx->error;
+    $desc = "navigate to $url";
+    $err  = $self->tx->error;
     Test::More::diag($err->{message}) if $err and $err->{message};
   }
   else {
-    Test::More::diag('External request? $t->tx() was not set');
+    $desc = "navigate to $url (\$t->tx() is not set)";
   }
 
-  return $self->_test('ok', !$err, _desc("live get $url"));
+  return $self->_test('ok', !$err, _desc($desc));
 }
 
 around new => sub {
@@ -305,6 +307,20 @@ L<Test::Mojo/tx> is only populated by this role, if the initial request is done
 by passing a relative path to L</navigate_ok>. This means that methods such as
 L<Test::Mojo/header_is> will not work as expected (probably fail completely) if
 L</navigate_ok> is issued with an absolute path like L<http://mojolicious.org>.
+
+=head1 ENVIRONMENT VARIABLES
+
+=head2 MOJO_SELENIUM_BASE_URL
+
+Setting this variable will make this test send the requests to a remote server,
+instead of starting a local server. Note that this will disable L<Test::Mojo>
+methods such as L</status_is>, since L<Test::Mojo/tx> will not be set. See
+also L</CAVEAT>.
+
+=head2 MOJO_SELENIUM_DRIVER
+
+This variable can be set to a classname, such as L<Selenium::Chrome> or
+L<Selenium::PhantomJS>, which will force the selenium driver.
 
 =head1 ATTRIBUTES
 
