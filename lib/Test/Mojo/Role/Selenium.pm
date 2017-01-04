@@ -473,11 +473,13 @@ Where screenshots are saved.
 
   $self = $self->active_element_is("input[name=username]");
 
-Test that the current active element on the page match the selector.
+Checks that the current active element on the page match the selector.
 
 =head2 button_down
 
   $self = $self->button_down;
+
+Click and hold the left mouse button.
 
 See L<Selenium::Remote::Driver/button_down>.
 
@@ -485,13 +487,15 @@ See L<Selenium::Remote::Driver/button_down>.
 
   $self = $self->button_up;
 
+Releases the mouse button previously held.
+
 See L<Selenium::Remote::Driver/button_up>.
 
 =head2 capture_screenshot
 
   $self = $self->capture_screenshot;
   $self = $self->capture_screenshot("%t-page-x");
-  $self = $self->capture_screenshot("%0-%t-%n");
+  $self = $self->capture_screenshot("%0-%t-%n"); # default
 
 Capture screenshot to L</screenshot_directory> with filename specified by the
 input format. The format supports these special strings:
@@ -513,13 +517,14 @@ Click on an element.
   $self = $self->current_url_is("http://mojolicious.org/");
   $self = $self->current_url_is("/whatever");
 
-Test the current browser URL.
+Test the current browser URL against an absolute URL. A relative URL will be
+converted to an absolute URL, using L</MOJO_SELENIUM_BASE_URL>.
 
 =head2 current_url_like
 
   $self = $self->current_url_like(qr{/whatever});
 
-Test the current browser URL.
+Test the current browser URL against a regex.
 
 =head2 element_is_displayed
 
@@ -541,23 +546,41 @@ See L<Selenium::Remote::WebElement/is_hidden>.
 
   $self = $self->go_back;
 
+Equivalent to hitting the back button on the browser.
+
 See L<Selenium::Remote::Driver/go_back>.
 
 =head2 go_forward
 
   $self = $self->go_forward;
 
+Equivalent to hitting the forward button on the browser.
+
 See L<Selenium::Remote::Driver/go_forward>.
 
 =head2 live_element_count_is
+
+  $self = $self->live_element_count_is("a", 12);
+
+Checks that the selector finds the correct number of elements in the browser.
 
 See L<Test::Mojo/element_count_is>.
 
 =head2 live_element_exists
 
+  $self = $self->live_element_exists("div.content");
+
+Checks that the selector finds an element in the browser.
+
 See L<Test::Mojo/element_exists>.
 
 =head2 live_element_exists_not
+
+  $self = $self->live_element_exists_not("div.content");
+
+Checks that the selector does not find an element in the browser.
+
+  $self = $self->live_element_exists("div.foo");
 
 See L<Test::Mojo/element_exists_not>.
 
@@ -605,6 +628,8 @@ See L<Selenium::Remote::Driver/maximize_window>.
 =head2 refresh
 
   $self = $self->refresh;
+
+Equivalent to hitting the refresh button on the browser.
 
 See L<Selenium::Remote::Driver/refresh>.
 
