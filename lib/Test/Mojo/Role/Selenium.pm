@@ -132,14 +132,34 @@ sub live_element_exists_not {
 
 sub live_text_is {
   my ($self, $selector, $value, $desc) = @_;
-  return $self->_test('is', $self->_live_text($selector),
-    $value, _desc($desc, qq{exact match for selector "$selector"}));
+  return $self->_test(
+    'is', $self->_element_data(get_text => $selector),
+    $value, _desc($desc, qq{exact text for selector "$selector"})
+  );
 }
 
 sub live_text_like {
   my ($self, $selector, $regex, $desc) = @_;
-  return $self->_test('like', $self->_live_text($selector),
-    $regex, _desc($desc, qq{similar match for selector "$selector"}));
+  return $self->_test(
+    'like', $self->_element_data(get_text => $selector),
+    $regex, _desc($desc, qq{similar text for selector "$selector"})
+  );
+}
+
+sub live_value_is {
+  my ($self, $selector, $value, $desc) = @_;
+  return $self->_test(
+    'is', $self->_element_data(get_value => $selector),
+    $value, _desc($desc, qq{exact value for selector "$selector"})
+  );
+}
+
+sub live_value_like {
+  my ($self, $selector, $regex, $desc) = @_;
+  return $self->_test(
+    'like', $self->_element_data(get_value => $selector),
+    $regex, _desc($desc, qq{similar value for selector "$selector"})
+  );
 }
 
 sub navigate_ok {
@@ -256,10 +276,10 @@ sub _proxy {
   return $res;
 }
 
-sub _live_text {
-  my $self = shift;
+sub _element_data {
+  my ($self, $method) = (shift, shift);
   my $el = $self->_proxy(find_element => shift);
-  return $el ? $el->get_text : '';
+  return $el ? $el->$method : '';
 }
 
 sub _screenshot_name {
@@ -316,7 +336,7 @@ Test::Mojo::Role::Selenium - Test::Mojo in a real browser
     ->send_keys_ok("input[name=q]", ["render", \"return"]);
 
   $t->wait_for_url(qr{q=render})
-    ->live_element_exists("input[name=search][value=render]");
+    ->live_value_is("input[name=search]", "render");
 
   done_testing;
 
@@ -554,6 +574,20 @@ browser matches the given string.
 
 Checks text content of the CSS selectors first matching HTML element in the
 browser matches the given regex.
+
+=head2 live_value_is
+
+  $self = $self->live_value_is("div.name", "Mojo");
+
+Checks value of the CSS selectors first matching HTML element in the browser
+matches the given string.
+
+=head2 live_value_like
+
+  $self = $self->live_value_is("div.name", qr{Mojo});
+
+Checks value of the CSS selectors first matching HTML element in the browser
+matches the given regex.
 
 =head2 navigate_ok
 

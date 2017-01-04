@@ -1,6 +1,7 @@
 Revision history for perl distribution Test-Mojo-Role-Selenium
 
 0.03 Not Released
+ - Add live_value_is() and live_value_like()
  - Add wait_for_url()
  - Fix send_keys_ok() with special keys
  - More robust send_keys_ok() for invisible elements

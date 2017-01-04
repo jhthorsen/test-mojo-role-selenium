@@ -18,7 +18,7 @@ $t->navigate_ok('/perldoc')->live_text_is('a[href="#GUIDES"]' => 'GUIDES')
 $t->driver->execute_script(qq[document.querySelector("form").removeAttribute("target")]);
 $t->element_is_displayed("input[name=q]")->send_keys_ok("input[name=q]", ["render", \"return"]);
 
-$t->wait_for_url(qr{q=render})->live_element_exists("input[name=search][value=render]");
+$t->wait_for_url(qr{q=render})->live_value_is("input[name=search]", "render");
 
 eval { $t->status_is(200) };
 like $@, qr{undefined value}, 'cannot call Test::Mojo methods on external results';
