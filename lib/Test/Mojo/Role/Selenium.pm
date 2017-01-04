@@ -672,6 +672,13 @@ Submit a form, either by selector or the current active form.
 
 See L<Selenium::Remote::WebElement/submit>.
 
+=head2 wait_for_url
+
+  $self = $self->wait_for_url(qr{/whatever});
+
+Will sleep until the URL in the browser changes to something that matches the
+given regex.
+
 =head2 window_size_is
 
   $self = $self->window_size_is([$width, $height]);
