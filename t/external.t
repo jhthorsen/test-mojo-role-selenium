@@ -15,9 +15,10 @@ $t->set_window_size([1024, 768]);
 $t->navigate_ok('/perldoc')->live_text_is('a[href="#GUIDES"]' => 'GUIDES')
   ->element_is_displayed("a");
 
-$t->element_is_displayed("input[name=q]")->send_keys_ok("input[name=q]", ["render", \"enter"]);
+$t->driver->execute_script(qq[document.querySelector("form").removeAttribute("target")]);
+$t->element_is_displayed("input[name=q]")->send_keys_ok("input[name=q]", ["render", \"return"]);
 
-$t->current_url_like(qr{q=render})->live_element_exists("input[name=search][value=render]");
+$t->wait_for_url(qr{q=render})->live_element_exists("input[name=search][value=render]");
 
 eval { $t->status_is(200) };
 like $@, qr{undefined value}, 'cannot call Test::Mojo methods on external results';

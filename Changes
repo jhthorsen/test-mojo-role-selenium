@@ -1,6 +1,8 @@
 Revision history for perl distribution Test-Mojo-Role-Selenium
 
 0.03 Not Released
+ - Add wait_for_url()
+ - Fix send_keys_ok() with special keys
  - More robust send_keys_ok() for invisible elements
 
 0.02 2017-01-04T09:26:41+0100

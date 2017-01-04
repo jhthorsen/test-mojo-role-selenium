@@ -2,10 +2,11 @@ package Test::Mojo::Role::Selenium;
 use Mojo::Base -base;
 use Role::Tiny;
 
+use Carp 'croak';
 use File::Basename ();
 use File::Spec;
 use Mojo::Util qw(encode monkey_patch);
-use Selenium::Remote::WDKeys;
+use Selenium::Remote::WDKeys ();
 
 use constant DEBUG => $ENV{MOJO_SELENIUM_DEBUG} || 0;
 
@@ -18,7 +19,7 @@ has driver => sub {
   my $self   = shift;
   my $args   = $self->driver_args;
   my $driver = $ENV{MOJO_SELENIUM_DRIVER} || $args->{driver_class} || 'Selenium::PhantomJS';
-  eval "require $driver;1" or die $@;
+  eval "require $driver;1" or croak "require $driver: $@";
   warn "[Selenium] Using $driver\n" if DEBUG;
   $driver = $driver->new(%$args, ua => $self->ua);
   $driver->debug_on if DEBUG > 1;
@@ -38,7 +39,7 @@ has _live_base => sub {
 
 has _live_server => sub {
   my $self   = shift;
-  my $app    = $self->app or die 'Cannot start server without $t->app(...) set';
+  my $app    = $self->app or croak 'Cannot start server without $t->app(...) set';
   my $server = Mojo::Server::Daemon->new(silent => DEBUG ? 0 : 1);
 
   Scalar::Util::weaken($self);
@@ -172,10 +173,20 @@ around new => sub {
 sub send_keys_ok {
   my ($self, $selector, $keys, $desc) = @_;
   my $el = $self->_proxy(find_element => $selector);
+  my @keys;
+
+  for (ref $keys ? @$keys : ($keys)) {
+    my $key = ref $_ ? Selenium::Remote::WDKeys::KEYS()->{$$_} : $_;
+    croak "Invalid key '@{[ref $_ ? $$_ : $_]}'" unless defined $key;
+    push @keys, $key;
+  }
 
   if ($el) {
     eval {
-      $el->send_keys(ref $_ ? KEYS->{$_} : $_) for ref $keys ? @$keys : ($keys);
+      for my $key (@keys) {
+        warn "[Selenium] send_keys $selector <- @{[Mojo::Util::url_escape($key)]}\n" if DEBUG;
+        $el->send_keys($key);
+      }
       1;
     } or do {
       Test::More::diag($@);
@@ -199,10 +210,28 @@ sub submit_ok {
   return $self->_test('ok', $el, _desc($desc, "click on $selector"));
 }
 
+sub wait_for_url {
+  my ($self, $regex, $desc) = @_;
+  my $driver = $self->driver;
+  my $guard  = 600;             # 60 seconds
+  my $ok;
+
+  while ($guard--) {
+    Time::HiRes::usleep(1e5);
+    warn "[Selenium] current_url=@{[$driver->get_current_url]}\n" if DEBUG > 2;
+    next unless $driver->get_current_url =~ /$regex/;
+    $ok = 1;
+    last;
+  }
+
+  return $self->_test('ok', $ok, _desc($desc, 'got expected url'));
+}
+
 sub window_size_is {
   my ($self, $exp, $desc) = @_;
   my $size = $self->driver->get_window_size;
-  $self->_test('is_deeply', [@$size{qw(width height)}],
+
+  return $self->_test('is_deeply', [@$size{qw(width height)}],
     $exp, _desc($desc, "window size is $exp->[0]x$exp->[1]"));
 }
 
@@ -282,10 +311,11 @@ Test::Mojo::Role::Selenium - Test::Mojo in a real browser
   $t->navigate_ok('/perldoc')
     ->live_text_is('a[href="#GUIDES"]' => 'GUIDES');
 
+  $t->driver->execute_script(qq[document.querySelector("form").removeAttribute("target")]);
   $t->element_is_displayed("input[name=q]")
-    ->send_keys_ok("input[name=q]", ["render", \"enter"]);
+    ->send_keys_ok("input[name=q]", ["render", \"return"]);
 
-  $t->current_url_like(qr{q=render})
+  $t->wait_for_url(qr{q=render})
     ->live_element_exists("input[name=search][value=render]");
 
   done_testing;
@@ -551,6 +581,22 @@ See L<Selenium::Remote::Driver/refresh>.
 
 Used to sen keys to a given element. Scalar refs will be sent as
 L<Selenium::Remote::WDKeys> strings.
+
+List of some of the special keys:
+
+=over 2
+
+=item * alt, control, shift
+
+=item * right_arrow, down_arrow, left_arrow, up_arrow
+
+=item * backspace, clear, delete, enter, return, escape, space, tab
+
+=item * f1, f2, ..., f12
+
+=item * command_meta, pause
+
+=back
 
 =head2 set_window_size
 
