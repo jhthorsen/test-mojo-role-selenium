@@ -9,7 +9,7 @@ SYNOPSIS
 
       $ENV{MOJO_SELENIUM_DRIVER} ||= 'Selenium::Chrome';
 
-      my $t = Test::Mojo::WithRoles->new->skip_all_or_setup;
+      my $t = Test::Mojo::WithRoles->new->setup_or_skip_all;
 
       $t->navigate_ok('/perldoc')
         ->live_text_is('a[href="#GUIDES"]' => 'GUIDES');
@@ -28,7 +28,7 @@ SYNOPSIS
       use Test::Mojo::WithRoles "Selenium";
       use Test::More;
 
-      my $t = Test::Mojo::WithRoles->new("MyApp")->skip_all_or_setup;
+      my $t = Test::Mojo::WithRoles->new("MyApp")->setup_or_skip_all;
 
       # All the standard Test::Mojo methods are available
       ok $t->isa("Test::Mojo");
@@ -297,8 +297,8 @@ METHODS
 
     Set the browser window size.
 
-  skip_all_or_setup
-      $self = $self->skip_all_or_setup;
+  setup_or_skip_all
+      $self = $self->setup_or_skip_all;
 
     Will "skip_all" in skip all#Test::More tests unless "TEST_SELENIUM" is
     set and and "driver" can be built.
