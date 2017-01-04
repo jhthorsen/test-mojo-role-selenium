@@ -5,9 +5,8 @@ use Test::More;
 use Mojolicious::Lite;
 get '/' => sub { shift->render(text => 'dummy') };
 
-my $driver = mock_driver();
-my $t      = Test::Mojo::WithRoles->new->driver($driver);
-$t->driver($driver);
+$ENV{MOJO_SELENIUM_DRIVER} = mock_driver();
+my $t = Test::Mojo::WithRoles->new;
 
 ok $t->isa('Test::Mojo'),                  'isa';
 ok $t->does('Test::Mojo::Role::Selenium'), 'does';
@@ -18,7 +17,7 @@ is $t->ua->ioloop, Mojo::IOLoop->singleton, 'ua ioloop';
 isa_ok($t->_live_server, 'Mojo::Server::Daemon');
 is $t->_live_server->listen->[0], $t->_live_base, 'listen';
 
-$t = Test::Mojo::WithRoles->new->driver($driver);
+$t = Test::Mojo::WithRoles->new;
 $ENV{MOJO_SELENIUM_BASE_URL} = 'http://mojolicious.org';
 is $t->_live_base, 'http://mojolicious.org', 'custom base';
 $t->navigate_ok('/perldoc');
@@ -28,11 +27,12 @@ ok !$t->{_live_server}, 'server not built';
 done_testing;
 
 sub mock_driver {
-  eval <<'HERE' or die $@;
+  return eval <<'HERE' or die $@;
   package Test::Mojo::Role::Selenium::MockDriver;
+  sub debug_on {}
+  sub default_finder {}
   sub get {}
-  1;
+  sub new {bless {}, 'Test::Mojo::Role::Selenium::MockDriver'}
+  $INC{'Test/Mojo/Role/Selenium/MockDriver.pm'} = 'Test::Mojo::Role::Selenium::MockDriver';
 HERE
-
-  return bless {}, 'Test::Mojo::Role::Selenium::MockDriver';
 }
