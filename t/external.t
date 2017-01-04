@@ -2,13 +2,11 @@ use Mojo::Base -strict;
 use Test::Mojo::WithRoles 'Selenium';
 use Test::More;
 
-my $t = Test::Mojo::WithRoles->new;
-
-$ENV{MOJO_SELENIUM_BASE_URL} = $ENV{TEST_BASE_URL} || '';
 $ENV{MOJO_SELENIUM_DRIVER} ||= 'Selenium::Chrome';
+plan skip_all => 'TEST_SELENIUM=http://mojolicious.org'
+  unless $ENV{TEST_SELENIUM} and $ENV{TEST_SELENIUM} =~ /^http/;
 
-plan skip_all => $@ || 'TEST_BASE_URL=http://mojolicious.org'
-  unless $ENV{TEST_BASE_URL} and eval { $t->driver };
+my $t = Test::Mojo::WithRoles->new->skip_all_or_setup;
 
 $t->set_window_size([1024, 768]);
 

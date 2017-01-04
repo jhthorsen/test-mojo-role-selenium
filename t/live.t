@@ -1,3 +1,4 @@
+BEGIN { $ENV{TEST_SELENIUM} = 1 if $ENV{TEST_SELENIUM} }
 use Mojo::Base -strict;
 use Test::Mojo::WithRoles 'Selenium';
 use Test::More;
@@ -6,13 +7,9 @@ use Mojolicious::Lite;
 get '/'    => 'index';
 get '/app' => 'app';
 
-my $t = Test::Mojo::WithRoles->new;
+my $t = Test::Mojo::WithRoles->new->skip_all_or_setup;
 
 $t->driver_args({driver_class => 'Selenium::Chrome'});
-
-# Make sure the driver can be initialized
-$ENV{TEST_LIVE} //= $ENV{TEST_BASE_URL} || 0;
-plan skip_all => $@ || 'TEST_LIVE=1' unless $ENV{TEST_LIVE} and eval { $t->driver };
 
 $t->set_window_size([1024, 768])->navigate_ok('/')->if_tx(status_is => 200)
   ->text_is('a.logo' => 'Logo')->live_text_is('a.logo' => 'Logo')->live_element_exists('nav')

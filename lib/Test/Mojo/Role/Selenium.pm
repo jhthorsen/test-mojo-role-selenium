@@ -5,7 +5,7 @@ use Role::Tiny;
 use Carp 'croak';
 use File::Basename ();
 use File::Spec;
-use Mojo::Util qw(encode monkey_patch);
+use Mojo::Util 'encode';
 use Selenium::Remote::WDKeys ();
 
 use constant DEBUG => $ENV{MOJO_SELENIUM_DEBUG} || 0;
@@ -240,6 +240,18 @@ sub set_window_size {
   return $self;
 }
 
+sub skip_all_or_setup {
+  my $self = shift;
+
+  local $@;
+  Test::More::plan(skip_all => $@ || 'TEST_SELENIUM=1 or TEST_SELENIUM=http://...')
+    unless $ENV{TEST_SELENIUM} and eval { $self->driver };
+
+  $ENV{MOJO_SELENIUM_BASE_URL} //= $ENV{TEST_SELENIUM} if $ENV{TEST_SELENIUM} =~ /^http/;
+
+  return $self;
+}
+
 sub submit_ok {
   my ($self, $selector, $desc) = @_;
   my $el = $self->_proxy(find_element => $selector);
@@ -337,13 +349,9 @@ Test::Mojo::Role::Selenium - Test::Mojo in a real browser
   use Test::Mojo::WithRoles "Selenium";
   use Test::More;
 
-  my $t = Test::Mojo::WithRoles->new;
-
-  $ENV{MOJO_SELENIUM_BASE_URL} = $ENV{TEST_BASE_URL} || '';
   $ENV{MOJO_SELENIUM_DRIVER} ||= 'Selenium::Chrome';
 
-  plan skip_all => $@ || 'TEST_BASE_URL=http://mojolicious.org'
-    unless $ENV{TEST_BASE_URL} and eval { $t->driver };
+  my $t = Test::Mojo::WithRoles->new->skip_all_or_setup;
 
   $t->navigate_ok('/perldoc')
     ->live_text_is('a[href="#GUIDES"]' => 'GUIDES');
@@ -363,14 +371,11 @@ Test::Mojo::Role::Selenium - Test::Mojo in a real browser
   use Test::Mojo::WithRoles "Selenium";
   use Test::More;
 
-  my $t = Test::Mojo::WithRoles->new("MyApp");
+  my $t = Test::Mojo::WithRoles->new("MyApp")->skip_all_or_setup;
 
   # All the standard Test::Mojo methods are available
   ok $t->isa("Test::Mojo");
   ok $t->does("Test::Mojo::Role::Selenium");
-
-  # Make sure the selenium driver can be initialized
-  plan skip_all => $@ unless eval { $t->driver };
 
   $t->navigate_ok("/")
     ->status_is(200)
@@ -670,6 +675,15 @@ List of some of the special keys:
   $self = $self->set_window_size([375, 667]);
 
 Set the browser window size.
+
+=head2 skip_all_or_setup
+
+  $self = $self->skip_all_or_setup;
+
+Will L<skip all#Test::More/skip_all> tests unless C<TEST_SELENIUM> is set and
+and L</driver> can be built.
+
+Will also set L</MOJO_SELENIUM_BASE_URL> if C<TEST_SELENIUM> looks like a URL.
 
 =head2 submit_ok
 

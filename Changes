@@ -2,6 +2,7 @@ Revision history for perl distribution Test-Mojo-Role-Selenium
 
 0.04 Not Released
  - Add if_tx()
+ - Add skip_all_or_setup()
 
 0.03 2017-01-04T11:19:34+0100
  - Add live_value_is() and live_value_like()
