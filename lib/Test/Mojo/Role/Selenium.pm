@@ -525,7 +525,6 @@ Set the browser window size.
 =head2 submit_ok
 
   $self = $self->submit_ok("form");
-  $self = $self->submit_ok;
 
 Submit a form, either by selector or the current active form.
 
