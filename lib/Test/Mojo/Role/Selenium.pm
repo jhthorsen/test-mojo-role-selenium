@@ -621,7 +621,7 @@ See L<Selenium::Remote::Driver/refresh>.
   $self->send_keys_ok("input[name=username]", "jhthorsen");
   $self->send_keys_ok("input[name=name]", ["jan", \"space", "henning"]);
 
-Used to sen keys to a given element. Scalar refs will be sent as
+Used to send keys to a given element. Scalar refs will be sent as
 L<Selenium::Remote::WDKeys> strings.
 
 List of some of the special keys:
