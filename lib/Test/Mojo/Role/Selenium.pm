@@ -78,10 +78,10 @@ sub capture_screenshot {
 }
 
 sub click_ok {
-  my ($self, $selector, $desc) = @_;
+  my ($self, $selector) = @_;
   my $el = $selector ? $self->_proxy(find_element => $selector) : $self->driver->get_active_element;
   $el->click if $el;
-  return $self->_test('ok', $el, _desc($desc, "click on $selector"));
+  return $self->_test('ok', $el, _desc("click on $selector"));
 }
 
 sub current_url_is {
@@ -110,6 +110,9 @@ sub element_is_hidden {
   my $el = $self->_proxy(find_element => $selector);
   return $self->_test('ok', ($el && $el->is_hidden), _desc($desc, "element $selector is hidden"));
 }
+
+sub go_back    { $_[0]->_proxy('go_back');    $_[0] }
+sub go_forward { $_[0]->_proxy('go_forward'); $_[0] }
 
 sub live_element_count_is {
   my ($self, $selector, $count, $desc) = @_;
@@ -189,6 +192,8 @@ around new => sub {
   $self->ua(Test::Mojo::Role::Selenium::UserAgent->new->ioloop(Mojo::IOLoop->singleton));
   return $self;
 };
+
+sub refresh { $_[0]->_proxy('refresh'); $_[0] }
 
 sub send_keys_ok {
   my ($self, $selector, $keys, $desc) = @_;
@@ -475,22 +480,6 @@ Where screenshots are saved.
 
 Checks that the current active element on the page match the selector.
 
-=head2 button_down
-
-  $self = $self->button_down;
-
-Click and hold the left mouse button.
-
-See L<Selenium::Remote::Driver/button_down>.
-
-=head2 button_up
-
-  $self = $self->button_up;
-
-Releases the mouse button previously held.
-
-See L<Selenium::Remote::Driver/button_up>.
-
 =head2 capture_screenshot
 
   $self = $self->capture_screenshot;
@@ -508,7 +497,7 @@ input format. The format supports these special strings:
 
 =head2 click_ok
 
-  $self = $self->click_ok("a", "left");
+  $self = $self->click_ok("a");
 
 Click on an element.
 
@@ -607,7 +596,7 @@ matches the given string.
 
 =head2 live_value_like
 
-  $self = $self->live_value_is("div.name", qr{Mojo});
+  $self = $self->live_value_like("div.name", qr{Mojo});
 
 Checks value of the CSS selectors first matching HTML element in the browser
 matches the given regex.
@@ -618,12 +607,6 @@ matches the given regex.
   $self = $self->navigate_ok("http://mojolicious.org/");
 
 Open a browser window and go to the given location.
-
-=head2 maximize_window
-
-  $self = $self->maximize_window;
-
-See L<Selenium::Remote::Driver/maximize_window>.
 
 =head2 refresh
 

@@ -24,7 +24,8 @@ $t->window_size_is([1024, 768])->submit_ok('form')->status_is(200)
 
 $t->click_ok('nav a.logo')->status_is(200)->live_element_count_is('a', 3);
 
-$t->navigate_ok('/not-found')->status_is(404)->current_url_is('/not-found');
+$t->navigate_ok('/not-found')->status_is(404)->current_url_is('/not-found')
+  ->refresh->go_back->go_forward;
 
 $t->capture_screenshot('foo');
 ok unlink(File::Spec->catfile($t->screenshot_directory, 'foo.png')), 'deleted foo screenshot';
