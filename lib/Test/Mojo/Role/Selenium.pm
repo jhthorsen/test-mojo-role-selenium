@@ -402,24 +402,24 @@ are a quick intro to install some of the dependencies to make this module work.
 
 =item * L<Selenium::Chrome>
 
-  # osx
+  # macOS
   $ brew install chromedriver
 
-  # ubuntu
+  # Ubuntu
   $ sudo apt-get install chromium-chromedriver
 
-  # run tests
+  # Run tests
   $ MOJO_SELENIUM_DRIVER=Selenium::Chrome prove -l
 
 =item * L<Selenium::PhantomJS>
 
-  # osx
+  # macOS
   $ brew install phantomjs
 
-  # ubuntu
+  # Ubuntu
   $ sudo apt-get install phantomjs
 
-  # run tests
+  # Run tests
   $ MOJO_SELENIUM_DRIVER=Selenium::PhantomJS prove -l
 
 =back
