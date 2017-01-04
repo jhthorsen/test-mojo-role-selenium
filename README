@@ -47,12 +47,50 @@ DESCRIPTION
 
     This role is EXPERIMENTAL and subject to change.
 
+OPTIONAL DEPENDENCIES
+    Selenium::Remote::Driver require some external dependencies to work.
+    Here are a quick intro to install some of the dependencies to make this
+    module work.
+
+    * Selenium::Chrome
+
+        # osx
+        $ brew install chromedriver
+
+        # ubuntu
+        $ sudo apt-get install chromium-chromedriver
+
+        # run tests
+        $ MOJO_SELENIUM_DRIVER=Selenium::Chrome prove -l
+
+    * Selenium::PhantomJS
+
+        # osx
+        $ brew install phantomjs
+
+        # ubuntu
+        $ sudo apt-get install phantomjs
+
+        # run tests
+        $ MOJO_SELENIUM_DRIVER=Selenium::PhantomJS prove -l
+
 CAVEAT
     "tx" in Test::Mojo is only populated by this role, if the initial
     request is done by passing a relative path to "navigate_ok". This means
     that methods such as "header_is" in Test::Mojo will not work as expected
     (probably fail completely) if "navigate_ok" is issued with an absolute
     path like <http://mojolicious.org>.
+
+ENVIRONMENT VARIABLES
+  MOJO_SELENIUM_BASE_URL
+    Setting this variable will make this test send the requests to a remote
+    server, instead of starting a local server. Note that this will disable
+    Test::Mojo methods such as "status_is", since "tx" in Test::Mojo will
+    not be set. See also "CAVEAT".
+
+  MOJO_SELENIUM_DRIVER
+    This variable can be set to a classname, such as Selenium::Chrome or
+    Selenium::PhantomJS, which will force the selenium driver.
 
 ATTRIBUTES
   driver
