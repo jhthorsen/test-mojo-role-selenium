@@ -1,6 +1,6 @@
 Revision history for perl distribution Test-Mojo-Role-Selenium
 
-0.04 Not Released
+0.04 2017-01-04T16:50:06+0100
  - Fix $t->app()
  - Add if_tx()
  - Add skip_all_or_setup()

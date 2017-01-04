@@ -10,7 +10,7 @@ use Selenium::Remote::WDKeys ();
 
 use constant DEBUG => $ENV{MOJO_SELENIUM_DEBUG} || 0;
 
-our $VERSION = '0.03';
+our $VERSION = '0.04';
 
 my $SCRIPT_NAME = File::Basename::basename($0);
 my $SCREENSHOT  = 1;

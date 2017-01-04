@@ -7,13 +7,9 @@ SYNOPSIS
       use Test::Mojo::WithRoles "Selenium";
       use Test::More;
 
-      my $t = Test::Mojo::WithRoles->new;
-
-      $ENV{MOJO_SELENIUM_BASE_URL} = $ENV{TEST_BASE_URL} || '';
       $ENV{MOJO_SELENIUM_DRIVER} ||= 'Selenium::Chrome';
 
-      plan skip_all => $@ || 'TEST_BASE_URL=http://mojolicious.org'
-        unless $ENV{TEST_BASE_URL} and eval { $t->driver };
+      my $t = Test::Mojo::WithRoles->new->skip_all_or_setup;
 
       $t->navigate_ok('/perldoc')
         ->live_text_is('a[href="#GUIDES"]' => 'GUIDES');
@@ -32,14 +28,11 @@ SYNOPSIS
       use Test::Mojo::WithRoles "Selenium";
       use Test::More;
 
-      my $t = Test::Mojo::WithRoles->new("MyApp");
+      my $t = Test::Mojo::WithRoles->new("MyApp")->skip_all_or_setup;
 
       # All the standard Test::Mojo methods are available
       ok $t->isa("Test::Mojo");
       ok $t->does("Test::Mojo::Role::Selenium");
-
-      # Make sure the selenium driver can be initialized
-      plan skip_all => $@ unless eval { $t->driver };
 
       $t->navigate_ok("/")
         ->status_is(200)
@@ -80,24 +73,24 @@ OPTIONAL DEPENDENCIES
 
     * Selenium::Chrome
 
-        # osx
+        # macOS
         $ brew install chromedriver
 
-        # ubuntu
+        # Ubuntu
         $ sudo apt-get install chromium-chromedriver
 
-        # run tests
+        # Run tests
         $ MOJO_SELENIUM_DRIVER=Selenium::Chrome prove -l
 
     * Selenium::PhantomJS
 
-        # osx
+        # macOS
         $ brew install phantomjs
 
-        # ubuntu
+        # Ubuntu
         $ sudo apt-get install phantomjs
 
-        # run tests
+        # Run tests
         $ MOJO_SELENIUM_DRIVER=Selenium::PhantomJS prove -l
 
 CAVEAT
@@ -206,6 +199,18 @@ METHODS
 
     See "go_forward" in Selenium::Remote::Driver.
 
+  if_tx
+      $self = $self->if_tx(sub { ... }, @args);
+      $self = $self->if_tx($method, @args);
+
+    Call either a code ref or a method on $self if "tx" in Test::Mojo is
+    defined. "tx()" is undefined if "navigate_ok" is called on an external
+    resource.
+
+    Examples:
+
+      $self->if_tx(status_is => 200);
+
   live_element_count_is
       $self = $self->live_element_count_is("a", 12);
 
@@ -271,7 +276,7 @@ METHODS
       $self->send_keys_ok("input[name=username]", "jhthorsen");
       $self->send_keys_ok("input[name=name]", ["jan", \"space", "henning"]);
 
-    Used to sen keys to a given element. Scalar refs will be sent as
+    Used to send keys to a given element. Scalar refs will be sent as
     Selenium::Remote::WDKeys strings.
 
     List of some of the special keys:
@@ -291,6 +296,15 @@ METHODS
       $self = $self->set_window_size([375, 667]);
 
     Set the browser window size.
+
+  skip_all_or_setup
+      $self = $self->skip_all_or_setup;
+
+    Will "skip_all" in skip all#Test::More tests unless "TEST_SELENIUM" is
+    set and and "driver" can be built.
+
+    Will also set "MOJO_SELENIUM_BASE_URL" if "TEST_SELENIUM" looks like a
+    URL.
 
   submit_ok
       $self = $self->submit_ok("form");
