@@ -264,6 +264,26 @@ sub submit_ok {
   return $self->_test('ok', $el, _desc($desc, "click on $selector"));
 }
 
+sub toggle_checked_ok {
+  my ($self, $selector) = @_;
+  my $el = $self->_proxy(find_element => $selector);
+
+  if ($el) {
+    if ($el->is_displayed) {
+      $el->click;
+    }
+    else {
+      my $sel = $selector;
+      $sel =~ s!"!\\"!g;
+      $self->driver->execute_script(
+        qq[var el=document.querySelector("$sel");el.setAttribute("checked", !el.getAttribute("checked"))]
+      );
+    }
+  }
+
+  return $self->_test('ok', $el, _desc("click on $selector"));
+}
+
 sub wait_until {
   my ($self, $cb, $args) = @_;
   my $ioloop = $self->ua->ioloop;
@@ -521,6 +541,15 @@ override the driver class.
   $self = $self->screenshot_directory(File::Spec->tmpdir);
 
 Where screenshots are saved.
+
+=head2 toggle_checked_ok
+
+  $self = $self->toggle_checked_ok("input[name=human]");
+
+Used to toggle the "checked" attribute either with a click event or fallback to
+javascript.
+
+TODO: The implementation might change in the future.
 
 =head1 METHODS
 
