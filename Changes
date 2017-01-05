@@ -1,6 +1,6 @@
 Revision history for perl distribution Test-Mojo-Role-Selenium
 
-0.06 Not Released
+0.06 2017-01-05T14:58:18+0100
  - Add wait_until()
  - Add support for send_keys_ok(undef, ...)
  - Remove wait_for_url()

@@ -18,7 +18,7 @@ SYNOPSIS
       $t->element_is_displayed("input[name=q]")
         ->send_keys_ok("input[name=q]", ["render", \"return"]);
 
-      $t->wait_for_url(qr{q=render})
+      $t->wait_until(sub { $_->get_current_url =~ qr{q=render} })
         ->live_value_is("input[name=search]", "render");
 
       done_testing;
@@ -156,8 +156,10 @@ METHODS
 
   click_ok
       $self = $self->click_ok("a");
+      $self = $self->click_ok;
 
-    Click on an element.
+    Click on an element matching the selector or click on the currently
+    active element.
 
   current_url_is
       $self = $self->current_url_is("http://mojolicious.org/");
@@ -265,6 +267,13 @@ METHODS
 
     Open a browser window and go to the given location.
 
+  new
+      $self = $class->new;
+      $self = $class->new($app);
+
+    Same as "new" in Test::Mojo, but will not build $app if
+    "MOJO_SELENIUM_BASE_URL" is set.
+
   refresh
       $self = $self->refresh;
 
@@ -273,11 +282,12 @@ METHODS
     See "refresh" in Selenium::Remote::Driver.
 
   send_keys_ok
-      $self->send_keys_ok("input[name=username]", "jhthorsen");
-      $self->send_keys_ok("input[name=name]", ["jan", \"space", "henning"]);
+      $self->send_keys_ok("input[name=name]", ["web", \"space", "framework"]);
+      $self->send_keys_ok(undef, [\"return"]);
 
     Used to send keys to a given element. Scalar refs will be sent as
-    Selenium::Remote::WDKeys strings.
+    Selenium::Remote::WDKeys strings. Passing in "undef" as the first
+    argument will cause the keys to be sent to the currently active element.
 
     List of some of the special keys:
 
@@ -313,11 +323,12 @@ METHODS
 
     See "submit" in Selenium::Remote::WebElement.
 
-  wait_for_url
-      $self = $self->wait_for_url(qr{/whatever});
+  wait_until
+      $self = $self->wait_until(sub { my $self = shift; return 1 });
+      $self = $self->wait_until(sub { $_->get_current_url =~ /foo/ });
 
-    Will sleep until the URL in the browser changes to something that
-    matches the given regex.
+    Start Mojo::IOLoop and run it until the callback returns true. Note that
+    $_[0] is $self and $_ is "driver".
 
   window_size_is
       $self = $self->window_size_is([$width, $height]);
