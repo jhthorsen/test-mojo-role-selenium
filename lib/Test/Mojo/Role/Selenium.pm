@@ -10,6 +10,9 @@ use Selenium::Remote::WDKeys ();
 
 use constant DEBUG => $ENV{MOJO_SELENIUM_DEBUG} || 0;
 
+$ENV{TEST_SELENIUM} //= '0';
+$ENV{MOJO_SELENIUM_BASE_URL} ||= $ENV{TEST_SELENIUM} =~ /^http/ ? $ENV{TEST_SELENIUM} : '';
+
 our $VERSION = '0.05';
 
 my $SCRIPT_NAME = File::Basename::basename($0);
@@ -198,14 +201,13 @@ sub navigate_ok {
   return $self->_test('ok', !$err, _desc($desc));
 }
 
-around new => sub {
-  my $next = shift;
-  my $self = $next->(@_);
-  my $app  = $self->app;
+sub new {
+  my $self = shift->SUPER::new;
   $self->ua(Test::Mojo::Role::Selenium::UserAgent->new->ioloop(Mojo::IOLoop->singleton));
-  $self->app($app) if $app;
-  return $self;
-};
+  return $self if $ENV{MOJO_SELENIUM_BASE_URL};
+  return $self unless my $app = shift;
+  return $self->app(ref $app ? $app : Mojo::Server->new->build_app($app));
+}
 
 sub refresh { $_[0]->_proxy('refresh'); $_[0] }
 
@@ -249,7 +251,7 @@ sub setup_or_skip_all {
   Test::More::plan(skip_all => $@ || 'TEST_SELENIUM=1 or TEST_SELENIUM=http://...')
     unless $ENV{TEST_SELENIUM} and eval { $self->driver };
 
-  $ENV{MOJO_SELENIUM_BASE_URL} //= $ENV{TEST_SELENIUM} if $ENV{TEST_SELENIUM} =~ /^http/;
+  $ENV{MOJO_SELENIUM_BASE_URL} ||= $ENV{TEST_SELENIUM} if $ENV{TEST_SELENIUM} =~ /^http/;
 
   return $self;
 }
@@ -666,6 +668,14 @@ matches the given regex.
   $self = $self->navigate_ok("http://mojolicious.org/");
 
 Open a browser window and go to the given location.
+
+=head2 new
+
+  $self = $class->new;
+  $self = $class->new($app);
+
+Same as L<Test::Mojo/new>, but will not build C<$app> if
+L</MOJO_SELENIUM_BASE_URL> is set.
 
 =head2 refresh
 

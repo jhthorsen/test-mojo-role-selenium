@@ -31,6 +31,10 @@ use Mojo::Base 'Mojolicious';
 HERE
 
 $t = Test::Mojo::WithRoles->new('MyApp');
+ok !$t->app->isa('MyApp'), 'MOJO_SELENIUM_BASE_URL, so no app';
+
+delete $ENV{MOJO_SELENIUM_BASE_URL};
+$t = Test::Mojo::WithRoles->new('MyApp');
 isa_ok($t->app, 'MyApp');
 
 done_testing;
