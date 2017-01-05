@@ -213,7 +213,7 @@ sub refresh { $_[0]->_proxy('refresh'); $_[0] }
 
 sub send_keys_ok {
   my ($self, $selector, $keys, $desc) = @_;
-  my $el = $self->_proxy(find_element => $selector);
+  my $el = $selector ? $self->_proxy(find_element => $selector) : $self->driver->get_active_element;
   my @keys;
 
   for (ref $keys ? @$keys : ($keys)) {
@@ -689,9 +689,11 @@ See L<Selenium::Remote::Driver/refresh>.
 
   $self->send_keys_ok("input[name=username]", "jhthorsen");
   $self->send_keys_ok("input[name=name]", ["jan", \"space", "henning"]);
+  $self->send_keys_ok(undef, [\"return"]);
 
 Used to send keys to a given element. Scalar refs will be sent as
-L<Selenium::Remote::WDKeys> strings.
+L<Selenium::Remote::WDKeys> strings. Passing in C<undef> as the first argument
+will cause the keys to be sent to the currently active element.
 
 List of some of the special keys:
 

@@ -2,6 +2,7 @@ Revision history for perl distribution Test-Mojo-Role-Selenium
 
 0.06 Not Released
  - Add wait_until()
+ - Add support for send_keys_ok(undef, ...)
  - Remove wait_for_url()
  - Do not build app if MOJO_SELENIUM_BASE_URL is set
 
