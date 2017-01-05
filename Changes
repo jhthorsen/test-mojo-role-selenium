@@ -1,5 +1,9 @@
 Revision history for perl distribution Test-Mojo-Role-Selenium
 
+0.06 Not Released
+ - Add wait_until()
+ - Remove wait_for_url()
+
 0.05 2017-01-04T17:25:03+0100
  - Renamed skip_all_or_setup() to setup_or_skip_all()
 

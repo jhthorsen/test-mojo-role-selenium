@@ -261,21 +261,32 @@ sub submit_ok {
   return $self->_test('ok', $el, _desc($desc, "click on $selector"));
 }
 
-sub wait_for_url {
-  my ($self, $regex, $desc) = @_;
-  my $driver = $self->driver;
-  my $guard  = 600;             # 60 seconds
-  my $ok;
+sub wait_until {
+  my ($self, $cb, $args) = @_;
+  my $ioloop = $self->ua->ioloop;
+  my @tid;
 
-  while ($guard--) {
-    Time::HiRes::usleep(1e5);
-    warn "[Selenium] current_url=@{[$driver->get_current_url]}\n" if DEBUG > 2;
-    next unless $driver->get_current_url =~ /$regex/;
-    $ok = 1;
-    last;
-  }
+  $args->{timeout}  ||= $ENV{MOJO_SELENIUM_WAIT_TIMEOUT}  || 60;
+  $args->{interval} ||= $ENV{MOJO_SELENIUM_WAIT_INTERVAL} || 0.5;
 
-  return $self->_test('ok', $ok, _desc($desc, 'got expected url'));
+  $ioloop->delay(
+    sub {
+      my $next = shift->begin;
+      push @tid, $ioloop->timer($args->{timeout}, $next);
+      push @tid, $ioloop->recurring(
+        $args->{interval},
+        sub {
+          $next->() if eval { local $_ = $self->driver; $self->$cb($args) };
+          Test::More::diag("[Selenium] wait_until: $@") if $@ and ($args->{debug} or DEBUG);
+        }
+      );
+    },
+    sub {
+      $ioloop->remove($_) for @tid;
+    },
+  )->wait;
+
+  return $self;
 }
 
 sub window_size_is {
@@ -329,11 +340,28 @@ use constant DEBUG => $ENV{MOJO_SELENIUM_DEBUG} || 0;
 
 sub request {
   my ($ua, $req) = @_;
-  my $method = lc $req->method || 'get';
-  warn "[Selenium] @{[uc $method]} @{[$req->uri->as_string]}\n" if DEBUG;
-  my $tx = $ua->$method($req->uri->as_string, {$req->headers->flatten}, $req->content);
+  my $method = uc($req->method || 'get');
+  my $tx = $ua->build_tx($method, $req->uri->as_string, {$req->headers->flatten}, $req->content);
+  my $done;
+
+  warn "[Selenium] $method @{[$req->uri->as_string]}\n" if DEBUG;
+
+  # This is super ugly and need to be implemented differently,
+  # but I'm not sure how to implement wait_until() without this
+  # one_tick() hack.
+  if ($ua->ioloop->is_running) {
+    $ua->start($tx, sub { $done = 1 });
+    $ua->ioloop->reactor->one_tick until $done;
+  }
+  else {
+    $ua->start($tx);
+  }
+
   return HTTP::Response->parse($tx->res->to_string);
 }
+
+# Should not say "... during global destruction."
+# sub DESTROY { warn 'no circular refs?' }
 
 1;
 
@@ -362,7 +390,7 @@ Test::Mojo::Role::Selenium - Test::Mojo in a real browser
   $t->element_is_displayed("input[name=q]")
     ->send_keys_ok("input[name=q]", ["render", \"return"]);
 
-  $t->wait_for_url(qr{q=render})
+  $t->wait_until(sub { $_->get_current_url =~ qr{q=render} })
     ->live_value_is("input[name=search]", "render");
 
   done_testing;
@@ -695,12 +723,13 @@ Submit a form, either by selector or the current active form.
 
 See L<Selenium::Remote::WebElement/submit>.
 
-=head2 wait_for_url
+=head2 wait_until
 
-  $self = $self->wait_for_url(qr{/whatever});
+  $self = $self->wait_until(sub { my $self = shift; return 1 });
+  $self = $self->wait_until(sub { $_->get_current_url =~ /foo/ });
 
-Will sleep until the URL in the browser changes to something that matches the
-given regex.
+Start L<Mojo::IOLoop> and run it until the callback returns true. Note that
+C<$_[0]> is C<$self> and C<$_> is L</driver>.
 
 =head2 window_size_is
 
