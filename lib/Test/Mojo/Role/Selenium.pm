@@ -214,17 +214,18 @@ sub refresh { $_[0]->_proxy('refresh'); $_[0] }
 sub send_keys_ok {
   my ($self, $selector, $keys, $desc) = @_;
   my $el = $selector ? $self->_proxy(find_element => $selector) : $self->driver->get_active_element;
-  my @keys;
 
-  for (ref $keys ? @$keys : ($keys)) {
+  $selector ||= 'active element';
+
+  for (@$keys) {
     my $key = ref $_ ? Selenium::Remote::WDKeys::KEYS()->{$$_} : $_;
     croak "Invalid key '@{[ref $_ ? $$_ : $_]}'" unless defined $key;
-    push @keys, $key;
+    $_ = $key;
   }
 
   if ($el) {
     eval {
-      for my $key (@keys) {
+      for my $key (@$keys) {
         warn "[Selenium] send_keys $selector <- @{[Mojo::Util::url_escape($key)]}\n" if DEBUG;
         $el->send_keys($key);
       }
@@ -547,8 +548,10 @@ input format. The format supports these special strings:
 =head2 click_ok
 
   $self = $self->click_ok("a");
+  $self = $self->click_ok;
 
-Click on an element.
+Click on an element matching the selector or click on the currently active
+element.
 
 =head2 current_url_is
 
@@ -687,8 +690,7 @@ See L<Selenium::Remote::Driver/refresh>.
 
 =head2 send_keys_ok
 
-  $self->send_keys_ok("input[name=username]", "jhthorsen");
-  $self->send_keys_ok("input[name=name]", ["jan", \"space", "henning"]);
+  $self->send_keys_ok("input[name=name]", ["web", \"space", "framework"]);
   $self->send_keys_ok(undef, [\"return"]);
 
 Used to send keys to a given element. Scalar refs will be sent as
