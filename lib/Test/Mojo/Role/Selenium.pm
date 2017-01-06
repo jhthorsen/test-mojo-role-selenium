@@ -83,8 +83,15 @@ sub capture_screenshot {
 sub click_ok {
   my ($self, $selector) = @_;
   my $el = $selector ? $self->_proxy(find_element => $selector) : $self->driver->get_active_element;
-  $el->click if $el;
-  return $self->_test('ok', $el, _desc("click on $selector"));
+  my $err = 'no such element';
+
+  if ($el) {
+    eval { $self->driver->mouse_move_to_location(element => $el) } unless $el->is_displayed;
+    $err = $@ || 'unable to click';
+    $err = '' if $el->click;
+  }
+
+  return $self->_test('ok', !$err, _desc("click on $selector $err"));
 }
 
 sub current_url_is {

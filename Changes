@@ -2,6 +2,7 @@ Revision history for perl distribution Test-Mojo-Role-Selenium
 
 0.07 Not Released
  - Add toggle_checked_ok()
+ - Change click_ok() to move mouse to the element first
 
 0.06 2017-01-05T14:58:18+0100
  - Add wait_until()
