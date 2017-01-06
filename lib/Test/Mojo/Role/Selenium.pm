@@ -294,7 +294,8 @@ sub toggle_checked_ok {
 sub wait_until {
   my ($self, $cb, $args) = @_;
   my $ioloop = $self->ua->ioloop;
-  my @tid;
+  my $t0     = time;
+  my ($ok, @tid);
 
   $args->{timeout}  ||= $ENV{MOJO_SELENIUM_WAIT_TIMEOUT}  || 60;
   $args->{interval} ||= $ENV{MOJO_SELENIUM_WAIT_INTERVAL} || 0.5;
@@ -306,17 +307,19 @@ sub wait_until {
       push @tid, $ioloop->recurring(
         $args->{interval},
         sub {
-          $next->() if eval { local $_ = $self->driver; $self->$cb($args) };
+          $next->(1, 1) if eval { local $_ = $self->driver; $self->$cb($args) };
           Test::More::diag("[Selenium] wait_until: $@") if $@ and ($args->{debug} or DEBUG);
         }
       );
     },
     sub {
+      $ok = $_[1];
       $ioloop->remove($_) for @tid;
     },
   )->wait;
 
-  return $self;
+  return $self if $args->{skip};
+  return $self->_test('ok', $ok, _desc($args->{desc} || "waited for @{[time - $t0]}s"));
 }
 
 sub window_size_is {
@@ -775,11 +778,21 @@ See L<Selenium::Remote::WebElement/submit>.
 
 =head2 wait_until
 
-  $self = $self->wait_until(sub { my $self = shift; return 1 });
-  $self = $self->wait_until(sub { $_->get_current_url =~ /foo/ });
+  $self = $self->wait_until(sub { my $self = shift; return 1 }, \%args);
+  $self = $self->wait_until(sub { $_->get_current_url =~ /foo/ }, \%args);
+
+  # Use it as a sleep(0.8)
+  $self = $self->wait_until(sub { 0 }, {timeout => 0.8, skip => 1});
 
 Start L<Mojo::IOLoop> and run it until the callback returns true. Note that
-C<$_[0]> is C<$self> and C<$_> is L</driver>.
+C<$_[0]> is C<$self> and C<$_> is L</driver>. C<%args> is optional, but can
+contain these values:
+
+  {
+    interval => $seconds, # Default: 0.5
+    timeout  => $seconds, # Default: 60
+    skip     => $bool,    # Default: 0
+  }
 
 =head2 window_size_is
 

@@ -8,6 +8,9 @@ get '/' => sub { shift->render(text => 'dummy') };
 $ENV{MOJO_SELENIUM_DRIVER} = mock_driver();
 my $t = Test::Mojo::WithRoles->new;
 
+# Avoid failing tests from wait_until()
+Mojo::Util::monkey_patch(ref($t), _test => sub { return shift });
+
 my $i = 1;
 $t->wait_until(sub { $_->x });
 is $i, 2, 'wait_until';
@@ -20,7 +23,7 @@ ok + ($i > 10), "wait_until interval ($i)";
 
 no warnings 'redefine';
 my @die;
-*Test::More::diag = sub { @die = @_ };
+*Test::More::diag = sub { push @die, @_ };
 $t->wait_until(sub { die 'yikes!' }, {debug => 1, interval => 0.1, timeout => 0.3});
 like "@die", qr{yikes}, 'debug';
 
