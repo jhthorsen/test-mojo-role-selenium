@@ -5,6 +5,7 @@ use Role::Tiny;
 use Carp 'croak';
 use File::Basename ();
 use File::Spec;
+use Mojo::Parameters;
 use Mojo::Util 'encode';
 use Selenium::Remote::WDKeys ();
 
@@ -19,12 +20,14 @@ my $SCRIPT_NAME = File::Basename::basename($0);
 my $SCREENSHOT  = 1;
 
 has driver => sub {
-  my $self   = shift;
-  my $args   = $self->driver_args;
-  my $driver = $ENV{MOJO_SELENIUM_DRIVER} || $args->{driver_class} || 'Selenium::PhantomJS';
+  my $self = shift;
+  my $args = $self->driver_args;
+  my ($driver, $env) = split /\&/, +($ENV{MOJO_SELENIUM_DRIVER} || ''), 2;
+  $env = Mojo::Parameters->new($env || '')->to_hash;
+  $driver ||= $args->{driver_class} || 'Selenium::PhantomJS';
   eval "require $driver;1" or croak "require $driver: $@";
   warn "[Selenium] Using $driver\n" if DEBUG;
-  $driver = $driver->new(%$args, ua => $self->ua);
+  $driver = $driver->new(%$args, %$env, ua => $self->ua);
   $driver->debug_on if DEBUG > 1;
   $driver->default_finder('css');
   $driver;
@@ -523,7 +526,13 @@ also L</CAVEAT>.
 =head2 MOJO_SELENIUM_DRIVER
 
 This variable can be set to a classname, such as L<Selenium::Chrome> or
-L<Selenium::PhantomJS>, which will force the selenium driver.
+L<Selenium::PhantomJS>, which will force the selenium driver. It can also be
+used to pass on arguments to the driver's constructor. Example:
+
+  MOJO_SELENIUM_DRIVER='Selenium::Remote::Driver&browser_name=firefox&port=4444'
+
+The arguments will be read using L<Mojo::Parameters/parse>, which means they
+follow standard URL format rules.
 
 =head1 ATTRIBUTES
 
