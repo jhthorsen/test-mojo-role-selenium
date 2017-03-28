@@ -109,7 +109,13 @@ ENVIRONMENT VARIABLES
 
   MOJO_SELENIUM_DRIVER
     This variable can be set to a classname, such as Selenium::Chrome or
-    Selenium::PhantomJS, which will force the selenium driver.
+    Selenium::PhantomJS, which will force the selenium driver. It can also
+    be used to pass on arguments to the driver's constructor. Example:
+
+      MOJO_SELENIUM_DRIVER='Selenium::Remote::Driver&browser_name=firefox&port=4444'
+
+    The arguments will be read using "parse" in Mojo::Parameters, which
+    means they follow standard URL format rules.
 
 ATTRIBUTES
   driver
