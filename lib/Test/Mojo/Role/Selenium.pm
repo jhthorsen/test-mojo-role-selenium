@@ -294,6 +294,29 @@ sub toggle_checked_ok {
   return $self->_test('ok', $el, _desc("click on $selector"));
 }
 
+sub wait_for {
+  my ($self, $arg, $desc) = @_;
+  my @checks;
+
+  return $self->wait_until(sub {0}, {skip => 1, timeout => $arg})
+    if Scalar::Util::looks_like_number($arg);
+
+
+  $desc ||= "waited for element $arg";
+  push @checks, 'is_displayed' if $arg =~ s!:visible\b!!;
+  push @checks, 'is_enabled'   if $arg =~ s!:enabled\b!!;
+  push @checks, 'is_hidden'    if $arg =~ s!:hidden\b!!;
+  push @checks, 'is_selected'  if $arg =~ s!:selected\b!!;
+
+  return $self->wait_until(
+    sub {
+      my $e = $_->find_element($arg);
+      return $e && @checks == grep { $e->$_ } @checks;
+    },
+    {desc => $desc},
+  );
+}
+
 sub wait_until {
   my ($self, $cb, $args) = @_;
   my $ioloop = $self->ua->ioloop;
@@ -784,6 +807,37 @@ Will also set L</MOJO_SELENIUM_BASE_URL> if C<TEST_SELENIUM> looks like a URL.
 Submit a form, either by selector or the current active form.
 
 See L<Selenium::Remote::WebElement/submit>.
+
+=head2 wait_for
+
+  $self = $self->wait_for(0.2);
+  $self = $self->wait_for('[name="agree"]', "test description");
+  $self = $self->wait_for('[name="agree"]:enabled');
+  $self = $self->wait_for('[name="agree"]:selected');
+  $self = $self->wait_for('[href="/"]:visible');
+  $self = $self->wait_for('[href="/hidden"]:hidden');
+
+Simpler version of L</wait_for> for the most common use cases:
+
+=over 2
+
+=item Number
+
+Allows the browser and server to run for a given interval in seconds. This is
+useful if you want the browser to receive data from the server or simply let
+C<setTimeout()> in JavaScript run.
+
+=item String
+
+Wait for an element matching the CSS selector with some additional modifiers:
+L<:enabled|Selenium::Remote::WebElement#is_enabled>,
+L<:hidden|Selenium::Remote::WebElement#is_hidden>,
+L<:selected|Selenium::Remote::WebElement#is_selected> and
+L<:visible|Selenium::Remote::WebElement#is_displayed>.
+
+Check out L<Selenium::Remote::WebElement> for details about the modifiers.
+
+=back
 
 =head2 wait_until
 

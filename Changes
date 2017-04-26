@@ -1,5 +1,8 @@
 Revision history for perl distribution Test-Mojo-Role-Selenium
 
+0.09 Not Released
+ - Add wait_for()
+
 0.08 2017-03-28T11:31:21+0200
  - Add support for arguments in MOJO_SELENIUM_DRIVER
 
