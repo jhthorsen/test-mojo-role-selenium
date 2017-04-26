@@ -6,7 +6,7 @@ WriteMakefile(
   LICENSE       => 'artistic_2',
   ABSTRACT_FROM => 'lib/Test/Mojo/Role/Selenium.pm',
   VERSION_FROM  => 'lib/Test/Mojo/Role/Selenium.pm',
-  EXE_FILES     => [qw(  )],
+  EXE_FILES     => [qw()],
   META_MERGE    => {
     resources => {
       bugtracker => 'https://github.com/jhthorsen/test-mojo-role-selenium/issues',

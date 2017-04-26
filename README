@@ -337,6 +337,28 @@ METHODS
 
     See "submit" in Selenium::Remote::WebElement.
 
+  wait_for
+      $self = $self->wait_for(0.2);
+      $self = $self->wait_for('[name="agree"]', "test description");
+      $self = $self->wait_for('[name="agree"]:enabled');
+      $self = $self->wait_for('[name="agree"]:selected');
+      $self = $self->wait_for('[href="/"]:visible');
+      $self = $self->wait_for('[href="/hidden"]:hidden');
+
+    Simpler version of "wait_for" for the most common use cases:
+
+    Number
+      Allows the browser and server to run for a given interval in seconds.
+      This is useful if you want the browser to receive data from the server
+      or simply let "setTimeout()" in JavaScript run.
+
+    String
+      Wait for an element matching the CSS selector with some additional
+      modifiers: :enabled, :hidden, :selected and :visible.
+
+      Check out Selenium::Remote::WebElement for details about the
+      modifiers.
+
   wait_until
       $self = $self->wait_until(sub { my $self = shift; return 1 }, \%args);
       $self = $self->wait_until(sub { $_->get_current_url =~ /foo/ }, \%args);
