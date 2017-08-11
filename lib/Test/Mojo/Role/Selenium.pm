@@ -594,15 +594,6 @@ Where screenshots are saved.
 Holds an array ref with paths to all the screenshots taken with
 L</capture_screenshot>.
 
-=head2 toggle_checked_ok
-
-  $self = $self->toggle_checked_ok("input[name=human]");
-
-Used to toggle the "checked" attribute either with a click event or fallback to
-javascript.
-
-TODO: The implementation might change in the future.
-
 =head1 METHODS
 
 =head2 active_element_is
@@ -817,6 +808,15 @@ Will also set L</MOJO_SELENIUM_BASE_URL> if C<TEST_SELENIUM> looks like a URL.
 Submit a form, either by selector or the current active form.
 
 See L<Selenium::Remote::WebElement/submit>.
+
+=head2 toggle_checked_ok
+
+  $self = $self->toggle_checked_ok("input[name=human]");
+
+Used to toggle the "checked" attribute either with a click event or fallback to
+javascript.
+
+TODO: The implementation might change in the future.
 
 =head2 wait_for
 

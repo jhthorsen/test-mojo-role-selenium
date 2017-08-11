@@ -1,5 +1,8 @@
 Revision history for perl distribution Test-Mojo-Role-Selenium
 
+0.11 Not Released
+ - Fix documentation order issue
+
 0.10 2017-08-10T13:17:23+0200
  - Add screenshots() attribute
 
