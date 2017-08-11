@@ -2,6 +2,7 @@ Revision history for perl distribution Test-Mojo-Role-Selenium
 
 0.11 Not Released
  - Fix documentation order issue
+ - Add support for finding elements by id, css, xpath, ...
 
 0.10 2017-08-10T13:17:23+0200
  - Add screenshots() attribute
