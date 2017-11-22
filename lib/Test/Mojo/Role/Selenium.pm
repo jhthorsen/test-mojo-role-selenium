@@ -41,7 +41,8 @@ has _live_base => sub {
   my $self = shift;
   return Mojo::URL->new($ENV{MOJO_SELENIUM_BASE_URL}) if $ENV{MOJO_SELENIUM_BASE_URL};
   $self->{live_port} = Mojo::IOLoop::Server->generate_port;
-  return Mojo::URL->new("http://127.0.0.1:$self->{live_port}");
+  my $test_hostname=$ENV{MOJO_SELENIUM_TEST_HOST} || '127.0.0.1';
+  return Mojo::URL->new("http://${test_hostname}:$self->{live_port}");
 };
 
 has _live_server => sub {
@@ -557,6 +558,13 @@ Setting this variable will make this test send the requests to a remote server,
 instead of starting a local server. Note that this will disable L<Test::Mojo>
 methods such as L</status_is>, since L<Test::Mojo/tx> will not be set. See
 also L</CAVEAT>.
+
+=head2 MOJO_SELENIUM_TEST_HOST
+
+In some cases you may want to override the host of your test server, when
+running Selenium on a separate server or in a pod-style networking environment
+this still retains the automatically generated port. This will not disable the
+L<Test::Mojo> methods.
 
 =head2 MOJO_SELENIUM_DRIVER
 

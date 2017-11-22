@@ -1,5 +1,8 @@
 Revision history for perl distribution Test-Mojo-Role-Selenium
 
+0.12 Not Released
+ - Add ENV variable to override Test::Mojo host
+
 0.11 2017-11-22T11:07:06+0100
  - Fix documentation order issue
  - Add support for finding elements by id, css, xpath, ...
