@@ -14,7 +14,7 @@ use constant DEBUG => $ENV{MOJO_SELENIUM_DEBUG} || 0;
 $ENV{TEST_SELENIUM} //= '0';
 $ENV{MOJO_SELENIUM_BASE_URL} ||= $ENV{TEST_SELENIUM} =~ /^http/ ? $ENV{TEST_SELENIUM} : '';
 
-our $VERSION = '0.11';
+our $VERSION = '0.12';
 
 my $SCRIPT_NAME = File::Basename::basename($0);
 my $SCREENSHOT  = 1;

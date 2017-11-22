@@ -107,6 +107,12 @@ ENVIRONMENT VARIABLES
     Test::Mojo methods such as "status_is", since "tx" in Test::Mojo will
     not be set. See also "CAVEAT".
 
+  MOJO_SELENIUM_TEST_HOST
+    In some cases you may want to override the host of your test server,
+    when running Selenium on a separate server or in a pod-style networking
+    environment this still retains the automatically generated port. This
+    will not disable the Test::Mojo methods.
+
   MOJO_SELENIUM_DRIVER
     This variable can be set to a classname, such as Selenium::Chrome or
     Selenium::PhantomJS, which will force the selenium driver. It can also
