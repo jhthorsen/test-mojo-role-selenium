@@ -249,7 +249,8 @@ sub send_keys_ok {
     };
   }
 
-  return $self->_test('ok', $el, _desc($desc, "keys sent to $selector"));
+  $keys = Mojo::Util::url_escape(join '', @$keys);
+  return $self->_test('ok', $el, _desc($desc, "keys ($keys) sent to $selector"));
 }
 
 sub set_window_size {
