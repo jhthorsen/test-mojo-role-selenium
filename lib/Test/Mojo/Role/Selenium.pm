@@ -41,7 +41,7 @@ has _live_base => sub {
   my $self = shift;
   return Mojo::URL->new($ENV{MOJO_SELENIUM_BASE_URL}) if $ENV{MOJO_SELENIUM_BASE_URL};
   $self->{live_port} = Mojo::IOLoop::Server->generate_port;
-  my $test_hostname=$ENV{MOJO_SELENIUM_TEST_HOST} || '127.0.0.1';
+  my $test_hostname = $ENV{MOJO_SELENIUM_TEST_HOST} || '127.0.0.1';
   return Mojo::URL->new("http://${test_hostname}:$self->{live_port}");
 };
 
