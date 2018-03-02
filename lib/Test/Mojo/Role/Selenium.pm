@@ -219,7 +219,9 @@ sub new {
   $self->ua(Test::Mojo::Role::Selenium::UserAgent->new->ioloop(Mojo::IOLoop->singleton));
   return $self if $ENV{MOJO_SELENIUM_BASE_URL};
   return $self unless my $app = shift;
-  return $self->app(ref $app ? $app : Mojo::Server->new->build_app($app));
+  my @args = @_ ? {config => {config_override => 1, %{shift()}}} : ();
+  return $self->app(
+    ref $app ? $app : Mojo::Server->new->build_app($app, @args));
 }
 
 sub refresh { $_[0]->_proxy('refresh'); $_[0] }
