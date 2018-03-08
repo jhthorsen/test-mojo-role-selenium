@@ -220,8 +220,7 @@ sub new {
   return $self if $ENV{MOJO_SELENIUM_BASE_URL};
   return $self unless my $app = shift;
   my @args = @_ ? {config => {config_override => 1, %{shift()}}} : ();
-  return $self->app(
-    ref $app ? $app : Mojo::Server->new->build_app($app, @args));
+  return $self->app(ref $app ? $app : Mojo::Server->new->build_app($app, @args));
 }
 
 sub refresh { $_[0]->_proxy('refresh'); $_[0] }
@@ -450,12 +449,11 @@ Test::Mojo::Role::Selenium - Test::Mojo in a real browser
 =head2 External app
 
   use Mojo::Base -strict;
-  use Test::Mojo::WithRoles "Selenium";
   use Test::More;
 
   $ENV{MOJO_SELENIUM_DRIVER} ||= 'Selenium::Chrome';
 
-  my $t = Test::Mojo::WithRoles->new->setup_or_skip_all;
+  my $t = Test::Mojo->with_roles("+Selenium")->new->setup_or_skip_all;
 
   $t->navigate_ok('/perldoc')
     ->live_text_is('a[href="#GUIDES"]' => 'GUIDES');
@@ -472,10 +470,9 @@ Test::Mojo::Role::Selenium - Test::Mojo in a real browser
 =head2 Internal app
 
   use Mojo::Base -strict;
-  use Test::Mojo::WithRoles "Selenium";
   use Test::More;
 
-  my $t = Test::Mojo::WithRoles->new("MyApp")->setup_or_skip_all;
+  my $t = Test::Mojo->with_roles("+Selenium")->new("MyApp")->setup_or_skip_all;
 
   # All the standard Test::Mojo methods are available
   ok $t->isa("Test::Mojo");
