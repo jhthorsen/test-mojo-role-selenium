@@ -1,8 +1,6 @@
 use lib '.';
 use t::Helper;
 
-use Carp::Always;
-
 use Mojolicious::Lite;
 get '/' => sub { shift->render(text => 'dummy') };
 
