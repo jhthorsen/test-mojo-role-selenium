@@ -1,6 +1,6 @@
 Revision history for perl distribution Test-Mojo-Role-Selenium
 
-0.13 Not Released
+0.13 2018-03-08T20:49:34+0100
  - Test::Mojo::WithRoles is no longer required
  - new() can take config overrides
    Contributor: tomk3002
