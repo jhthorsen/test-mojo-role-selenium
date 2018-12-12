@@ -451,7 +451,8 @@ Test::Mojo::Role::Selenium - Test::Mojo in a real browser
   use Mojo::Base -strict;
   use Test::More;
 
-  $ENV{MOJO_SELENIUM_DRIVER} ||= 'Selenium::Chrome';
+  $ENV{MOJO_SELENIUM_BASE_URL} ||= 'http://mojolicious.org';
+  $ENV{MOJO_SELENIUM_DRIVER}   ||= 'Selenium::Chrome';
 
   my $t = Test::Mojo->with_roles("+Selenium")->new->setup_or_skip_all;
 
@@ -506,7 +507,7 @@ is done by L<Selenium::Remote::Driver>.
 
 Some of the L<Selenium::Remote::Driver> methods are available directly in this
 role, while the rest are available through the object held by the L</driver>
-attribute. Please let me know if you think more tests or methods should be
+attribute. Please create an issue if you think more tests or methods should be
 provided directly by L<Test::Mojo::Role::Selenium>.
 
 =head1 OPTIONAL DEPENDENCIES
@@ -531,10 +532,9 @@ are a quick intro to install some of the dependencies to make this module work.
 
 =head1 CAVEAT
 
-L<Test::Mojo/tx> is only populated by this role, if the initial request is done
-by passing a relative path to L</navigate_ok>. This means that methods such as
-L<Test::Mojo/header_is> will not work as expected (probably fail completely) if
-L</navigate_ok> is issued with an absolute path like L<http://mojolicious.org>.
+L<Test::Mojo/tx> is only populated, if the request went through an L</Internal app>.
+This means that methods such as L<Test::Mojo/header_is> will not work or
+probably fail completely when testing an L</External app>.
 
 =head1 ENVIRONMENT VARIABLES
 
@@ -544,6 +544,8 @@ Setting this variable will make this test send the requests to a remote server,
 instead of starting a local server. Note that this will disable L<Test::Mojo>
 methods such as L</status_is>, since L<Test::Mojo/tx> will not be set. See
 also L</CAVEAT>.
+
+This variable will get the value of L</TEST_SELENIUM> if it looks like a URL.
 
 =head2 MOJO_SELENIUM_TEST_HOST
 
@@ -562,6 +564,11 @@ driver's constructor. Example:
 
 The arguments will be read using L<Mojo::Parameters/parse>, which means they
 follow standard URL format rules.
+
+=head2 TEST_SELENIUM
+
+This variable must be set to a true value for L</setup_or_skip_all> to not skip
+this test. Will also set L</MOJO_SELENIUM_BASE_URL> if it looks like an URL.
 
 =head1 ATTRIBUTES
 
