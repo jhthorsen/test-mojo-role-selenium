@@ -24,7 +24,7 @@ has driver => sub {
   my $args = $self->driver_args;
   my ($driver, $env) = split /\&/, +($ENV{MOJO_SELENIUM_DRIVER} || ''), 2;
   $env = Mojo::Parameters->new($env || '')->to_hash;
-  $driver ||= $args->{driver_class} || 'Selenium::PhantomJS';
+  $driver ||= $args->{driver_class} || 'Selenium::Chrome';
   eval "require $driver;1" or croak "require $driver: $@";
   warn "[Selenium] Using $driver\n" if DEBUG;
   $driver = $driver->new(%$args, %$env, ua => $self->ua);
@@ -527,17 +527,6 @@ are a quick intro to install some of the dependencies to make this module work.
   # Run tests
   $ MOJO_SELENIUM_DRIVER=Selenium::Chrome prove -l
 
-=item * L<Selenium::PhantomJS>
-
-  # macOS
-  $ brew install phantomjs
-
-  # Ubuntu
-  $ sudo apt-get install phantomjs
-
-  # Run tests
-  $ MOJO_SELENIUM_DRIVER=Selenium::PhantomJS prove -l
-
 =back
 
 =head1 CAVEAT
@@ -565,9 +554,9 @@ L<Test::Mojo> methods.
 
 =head2 MOJO_SELENIUM_DRIVER
 
-This variable can be set to a classname, such as L<Selenium::Chrome> or
-L<Selenium::PhantomJS>, which will force the selenium driver. It can also be
-used to pass on arguments to the driver's constructor. Example:
+This variable can be set to a classname, such as L<Selenium::Chrome> which will
+force the selenium driver. It can also be used to pass on arguments to the
+driver's constructor. Example:
 
   MOJO_SELENIUM_DRIVER='Selenium::Remote::Driver&browser_name=firefox&port=4444'
 
@@ -585,11 +574,11 @@ An instance of L<Selenium::Remote::Driver>.
 =head2 driver_args
 
   $hash = $self->driver_args;
-  $self = $self->driver_args({driver_class => "Selenium::PhantomJS"});
+  $self = $self->driver_args({driver_class => "Selenium::Chrome"});
 
 Used to set args passed on to the L</driver> on construction time. In addition,
 a special key "driver_class" can be set to use another driver class, than the
-default L<Selenium::PhantomJS>.
+default.
 
 Note that the environment variavble C<MOJO_SELENIUM_DRIVER> can also be used to
 override the driver class.
