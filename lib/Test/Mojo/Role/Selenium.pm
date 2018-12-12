@@ -509,8 +509,6 @@ role, while the rest are available through the object held by the L</driver>
 attribute. Please let me know if you think more tests or methods should be
 provided directly by L<Test::Mojo::Role::Selenium>.
 
-This role is EXPERIMENTAL and subject to change.
-
 =head1 OPTIONAL DEPENDENCIES
 
 L<Selenium::Remote::Driver> require some external dependencies to work. Here
@@ -831,8 +829,6 @@ See L<Selenium::Remote::WebElement/submit>.
 
 Used to toggle the "checked" attribute either with a click event or fallback to
 javascript.
-
-TODO: The implementation might change in the future.
 
 =head2 wait_for
 
