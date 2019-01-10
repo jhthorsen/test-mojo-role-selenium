@@ -848,6 +848,7 @@ javascript.
   $self = $self->wait_for('[name="agree"]:selected');
   $self = $self->wait_for('[href="/"]:visible');
   $self = $self->wait_for('[href="/hidden"]:hidden');
+  $self = $self->wait_for('[name=checkbox]:checked');
 
 Simpler version of L</wait_until> for the most common use cases:
 
