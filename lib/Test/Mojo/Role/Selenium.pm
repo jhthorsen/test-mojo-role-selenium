@@ -9,7 +9,9 @@ use Mojo::Parameters;
 use Mojo::Util 'encode';
 use Selenium::Remote::WDKeys ();
 
-use constant DEBUG => $ENV{MOJO_SELENIUM_DEBUG} || 0;
+use constant DEBUG         => $ENV{MOJO_SELENIUM_DEBUG}         || 0;
+use constant WAIT_INTERVAL => $ENV{MOJO_SELENIUM_WAIT_INTERVAL} || 0.5;
+use constant WAIT_TIMEOUT  => $ENV{MOJO_SELENIUM_WAIT_TIMEOUT}  || 60;
 
 $ENV{TEST_SELENIUM} //= '0';
 $ENV{MOJO_SELENIUM_BASE_URL} ||= $ENV{TEST_SELENIUM} =~ /^http/ ? $ENV{TEST_SELENIUM} : '';
@@ -307,7 +309,6 @@ sub wait_for {
   return $self->wait_until(sub {0}, {skip => 1, timeout => $arg})
     if Scalar::Util::looks_like_number($arg);
 
-
   $desc ||= "waited for element $arg";
   push @checks, 'is_displayed' if $arg =~ s!:visible\b!!;
   push @checks, 'is_enabled'   if $arg =~ s!:enabled\b!!;
@@ -326,32 +327,25 @@ sub wait_for {
 sub wait_until {
   my ($self, $cb, $args) = @_;
   my $ioloop = $self->ua->ioloop;
-  my $t0     = time;
-  my ($ok, @tid);
 
-  $args->{timeout}  ||= $ENV{MOJO_SELENIUM_WAIT_TIMEOUT}  || 60;
-  $args->{interval} ||= $ENV{MOJO_SELENIUM_WAIT_INTERVAL} || 0.5;
+  my $err;
+  my @tid = (
+    $ioloop->timer($args->{timeout} || WAIT_TIMEOUT, sub { $err = 'Timeout' }),
+    $ioloop->recurring(
+      $args->{interval} || WAIT_INTERVAL,
+      sub {
+        return shift->stop if $err || eval { local $_ = $self->driver; $self->$cb($args) };
+        Test::More::diag("[Selenium] wait_until: $@") if $@ and ($args->{debug} or DEBUG);
+      }
+    ),
+  );
 
-  $ioloop->delay(
-    sub {
-      my $next = shift->begin;
-      push @tid, $ioloop->timer($args->{timeout}, $next);
-      push @tid, $ioloop->recurring(
-        $args->{interval},
-        sub {
-          $next->(1, 1) if eval { local $_ = $self->driver; $self->$cb($args) };
-          Test::More::diag("[Selenium] wait_until: $@") if $@ and ($args->{debug} or DEBUG);
-        }
-      );
-    },
-    sub {
-      $ok = $_[1];
-      $ioloop->remove($_) for @tid;
-    },
-  )->wait;
+  my $t0 = time;
+  $ioloop->start;
+  $ioloop->remove($_) for @tid;
 
   return $self if $args->{skip};
-  return $self->_test('ok', $ok, _desc($args->{desc} || "waited for @{[time - $t0]}s"));
+  return $self->_test('ok', !$err, _desc($args->{desc} || "waited for @{[time - $t0]}s"));
 }
 
 sub window_size_is {
