@@ -16,6 +16,8 @@ use constant WAIT_TIMEOUT  => $ENV{MOJO_SELENIUM_WAIT_TIMEOUT}  || 60;
 $ENV{TEST_SELENIUM} //= '0';
 $ENV{MOJO_SELENIUM_BASE_URL} ||= $ENV{TEST_SELENIUM} =~ /^http/ ? $ENV{TEST_SELENIUM} : '';
 
+sub S { Mojo::JSON::encode_json($_[0]) }
+
 our $VERSION = '0.15';
 
 my $SCRIPT_NAME = File::Basename::basename($0);
@@ -75,7 +77,7 @@ sub active_element_is {
   my $el     = $self->_find_element($selector);
   my $same   = $active && $el ? $driver->compare_elements($active, $el) : 0;
 
-  return $self->_test('ok', $same, _desc($desc, "active element is $selector"));
+  return $self->_test('ok', $same, _desc($desc, "active element is @{[S $selector]}"));
 }
 
 sub capture_screenshot {
@@ -99,7 +101,7 @@ sub click_ok {
     $err = '' if $el->click;
   }
 
-  return $self->_test('ok', !$err, _desc("click on $selector $err"));
+  return $self->_test('ok', !$err, _desc("click on @{[S $selector]} $err"));
 }
 
 sub current_url_is {
@@ -119,14 +121,18 @@ sub current_url_like {
 sub element_is_displayed {
   my ($self, $selector, $desc) = @_;
   my $el = $self->_find_element($selector);
-  return $self->_test('ok', ($el && $el->is_displayed),
-    _desc($desc, "element $selector is displayed"));
+  return $self->_test(
+    'ok',
+    ($el && $el->is_displayed),
+    _desc($desc, "element @{[S $selector]} is displayed")
+  );
 }
 
 sub element_is_hidden {
   my ($self, $selector, $desc) = @_;
   my $el = $self->_find_element($selector);
-  return $self->_test('ok', ($el && $el->is_hidden), _desc($desc, "element $selector is hidden"));
+  return $self->_test('ok', ($el && $el->is_hidden),
+    _desc($desc, "element @{[S $selector]} is hidden"));
 }
 
 sub go_back    { $_[0]->_proxy('go_back');    $_[0] }
@@ -148,18 +154,18 @@ sub live_element_count_is {
   my ($self, $selector, $count, $desc) = @_;
   my $els = $self->_proxy(find_elements => $selector);
   return $self->_test('is', int(@$els), $count,
-    _desc($desc, qq{element count for selector "$selector"}));
+    _desc($desc, "element count for selector @{[S $selector]}"));
 }
 
 sub live_element_exists {
   my ($self, $selector, $desc) = @_;
-  $desc = _desc($desc, qq{element for selector "$selector" exists});
+  $desc = _desc($desc, "element for selector @{[S $selector]} exists");
   return $self->_test('ok', $self->_find_element($selector), $desc);
 }
 
 sub live_element_exists_not {
   my ($self, $selector, $desc) = @_;
-  $desc = _desc($desc, qq{no element for selector "$selector"});
+  $desc = _desc($desc, "no element for selector @{[S $selector]}");
   return $self->_test('ok', !$self->_find_element($selector), $desc);
 }
 
@@ -167,7 +173,7 @@ sub live_text_is {
   my ($self, $selector, $value, $desc) = @_;
   return $self->_test(
     'is', $self->_element_data(get_text => $selector),
-    $value, _desc($desc, qq{exact text for selector "$selector"})
+    $value, _desc($desc, "exact text for selector @{[S $selector]}")
   );
 }
 
@@ -175,7 +181,7 @@ sub live_text_like {
   my ($self, $selector, $regex, $desc) = @_;
   return $self->_test(
     'like', $self->_element_data(get_text => $selector),
-    $regex, _desc($desc, qq{similar text for selector "$selector"})
+    $regex, _desc($desc, "similar text for selector @{[S $selector]}")
   );
 }
 
@@ -183,7 +189,7 @@ sub live_value_is {
   my ($self, $selector, $value, $desc) = @_;
   return $self->_test(
     'is', $self->_element_data(get_value => $selector),
-    $value, _desc($desc, qq{exact value for selector "$selector"})
+    $value, _desc($desc, "exact value for selector @{[S $selector]}")
   );
 }
 
@@ -191,7 +197,7 @@ sub live_value_like {
   my ($self, $selector, $regex, $desc) = @_;
   return $self->_test(
     'like', $self->_element_data(get_value => $selector),
-    $regex, _desc($desc, qq{similar value for selector "$selector"})
+    $regex, _desc($desc, "similar value for selector @{[S $selector]}")
   );
 }
 
@@ -254,7 +260,7 @@ sub send_keys_ok {
   }
 
   $keys = Mojo::Util::url_escape(join '', @$keys);
-  return $self->_test('ok', $el, _desc($desc, "keys ($keys) sent to $selector"));
+  return $self->_test('ok', $el, _desc($desc, "keys ($keys) sent to @{[S $selector]}"));
 }
 
 sub set_window_size {
@@ -279,7 +285,7 @@ sub submit_ok {
   my ($self, $selector, $desc) = @_;
   my $el = $self->_find_element($selector);
   $el->submit if $el;
-  return $self->_test('ok', $el, _desc($desc, "click on $selector"));
+  return $self->_test('ok', $el, _desc($desc, "click on @{[S $selector]}"));
 }
 
 sub toggle_checked_ok {
@@ -299,7 +305,7 @@ sub toggle_checked_ok {
     }
   }
 
-  return $self->_test('ok', $el, _desc("click on $selector"));
+  return $self->_test('ok', $el, _desc("click on @{[S $selector]}"));
 }
 
 sub wait_for {

@@ -2,6 +2,7 @@ Revision history for perl distribution Test-Mojo-Role-Selenium
 
 0.16 Not Released
  - Stop using delay() inside wait_until()
+ - Fix default element description when passing in a hash
  - Improved wait_for() in the case where the element is not present on the page at all
  - Add support for passing in interval and timeout to wait_for()
 
