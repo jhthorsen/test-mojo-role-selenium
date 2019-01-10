@@ -303,25 +303,39 @@ sub toggle_checked_ok {
 }
 
 sub wait_for {
-  my ($self, $arg, $desc) = @_;
+  my $self = shift;
+  my $sel  = shift;
+  my $args = ref $_[0] eq 'HASH' ? shift : {};
+  my $desc = shift || "waited for element $sel";
   my @checks;
 
-  return $self->wait_until(sub {0}, {skip => 1, timeout => $arg})
-    if Scalar::Util::looks_like_number($arg);
+  if (Scalar::Util::looks_like_number($sel)) {
+    $self->ua->ioloop->timer($sel => sub { shift->stop });
+    $self->ua->ioloop->start;
+    return $self;
+  }
 
-  $desc ||= "waited for element $arg";
-  push @checks, 'is_displayed' if $arg =~ s!:visible\b!!;
-  push @checks, 'is_enabled'   if $arg =~ s!:enabled\b!!;
-  push @checks, 'is_hidden'    if $arg =~ s!:hidden\b!!;
-  push @checks, 'is_selected'  if $arg =~ s!:selected\b!!;
+  push @checks, 'is_displayed' if $sel =~ s!:visible\b!!;
+  push @checks, 'is_enabled'   if $sel =~ s!:enabled\b!!;
+  push @checks, 'is_hidden'    if $sel =~ s!:hidden\b!!;
+  push @checks, 'is_selected'  if $sel =~ s!:selected\b!!;
 
-  return $self->wait_until(
+  my $driver                = $self->driver;
+  my $prev_implicit_timeout = $driver->get_timeouts->{implicit};
+  $driver->set_timeout(implicit => $args->{timeout} || WAIT_TIMEOUT);
+
+  my $ok;
+  $self->wait_until(
     sub {
-      my $e = $_->find_element($arg);
-      return $e && @checks == grep { $e->$_ } @checks;
+      my $e = $_->find_element($sel);
+      return $ok = $e && @checks == grep { $e->$_ } @checks;
     },
-    {desc => $desc},
+    {%$args, skip => 1},
   );
+
+  $driver->set_timeout(implicit => $prev_implicit_timeout);
+
+  return $self->_test('ok', $ok, _desc($desc));
 }
 
 sub wait_until {
@@ -824,12 +838,12 @@ javascript.
 
   $self = $self->wait_for(0.2);
   $self = $self->wait_for('[name="agree"]', "test description");
-  $self = $self->wait_for('[name="agree"]:enabled');
+  $self = $self->wait_for('[name="agree"]:enabled', {interval => 1.5, timeout => 10});
   $self = $self->wait_for('[name="agree"]:selected');
   $self = $self->wait_for('[href="/"]:visible');
   $self = $self->wait_for('[href="/hidden"]:hidden');
 
-Simpler version of L</wait_for> for the most common use cases:
+Simpler version of L</wait_until> for the most common use cases:
 
 =over 2
 
