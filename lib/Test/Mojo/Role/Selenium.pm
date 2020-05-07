@@ -18,7 +18,7 @@ $ENV{MOJO_SELENIUM_BASE_URL} ||= $ENV{TEST_SELENIUM} =~ /^http/ ? $ENV{TEST_SELE
 
 sub S { Mojo::JSON::encode_json($_[0]) }
 
-our $VERSION = '0.16';
+our $VERSION = '0.17';
 
 my $SCRIPT_NAME = File::Basename::basename($0);
 my $SCREENSHOT  = 1;
